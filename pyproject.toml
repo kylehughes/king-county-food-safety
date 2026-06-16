@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=70"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "king-county-food-safety-ratings-cli"
+version = "0.1.0"
+description = "CLI for King County food safety ratings, inspections, violations, geocoding, and ArcGIS queries."
+readme = "README.md"
+requires-python = ">=3.12"
+authors = [
+    { name = "Kyle Hughes" }
+]
+dependencies = []
+
+[project.scripts]
+kc-food-safety = "kc_food_safety.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
