@@ -9,9 +9,9 @@ from urllib.error import HTTPError
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
-from kc_food_safety import constants
-from kc_food_safety.errors import ArcGISError, FoodSafetyError, HTTPStatusError
-from kc_food_safety.models import (
+from king_county_food_safety import constants
+from king_county_food_safety.errors import ArcGISError, FoodSafetyError, HTTPStatusError
+from king_county_food_safety.models import (
     Feature,
     FoodSafetyLayer,
     GeocodeCandidate,
@@ -160,7 +160,7 @@ class ArcGISClient:
     def get_bytes(self, url: str) -> bytes:
         """Fetch raw bytes from a URL."""
 
-        request = Request(url, headers={"User-Agent": "kc-food-safety/0.1"})
+        request = Request(url, headers={"User-Agent": "king-county-food-safety/0.1"})
         try:
             with urlopen(request, timeout=self.timeout) as response:
                 status = getattr(response, "status", 200)

@@ -1,9 +1,9 @@
 import unittest
 from urllib.parse import parse_qs, urlparse
 
-from kc_food_safety.arcgis import FeatureQuery, SpatialFilter
-from kc_food_safety.errors import FoodSafetyError
-from kc_food_safety.models import FoodSafetyLayer
+from king_county_food_safety.arcgis import FeatureQuery, SpatialFilter
+from king_county_food_safety.errors import FoodSafetyError
+from king_county_food_safety.models import FoodSafetyLayer
 
 
 class FeatureQueryTests(unittest.TestCase):

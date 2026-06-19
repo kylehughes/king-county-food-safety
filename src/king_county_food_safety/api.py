@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
-from kc_food_safety import sql
-from kc_food_safety.arcgis import ArcGISClient, FeatureQuery, SpatialFilter
-from kc_food_safety.errors import FoodSafetyError
-from kc_food_safety.models import (
+from king_county_food_safety import sql
+from king_county_food_safety.arcgis import ArcGISClient, FeatureQuery, SpatialFilter
+from king_county_food_safety.errors import FoodSafetyError
+from king_county_food_safety.models import (
     FacilityRecord,
     Feature,
     FoodSafetyLayer,

@@ -1,6 +1,6 @@
 import unittest
 
-from kc_food_safety.api import FoodSafetyAPI
+from king_county_food_safety.api import FoodSafetyAPI
 
 
 class FoodSafetyAPITests(unittest.TestCase):

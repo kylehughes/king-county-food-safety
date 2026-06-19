@@ -1,7 +1,7 @@
 import json
 import unittest
 
-from kc_food_safety.models import (
+from king_county_food_safety.models import (
     FacilityRecord,
     FoodSafetyRating,
     GeocodeCandidate,

@@ -4,7 +4,7 @@ Python CLI for King County food facility ratings, inspection history, violations
 
 ## About
 
-This package exposes the public ArcGIS services behind King County's food safety rating map as a local command-line tool named `kc-food-safety`.
+This package exposes the public ArcGIS services behind King County's food safety rating map as a local command-line tool named `king-county-food-safety`.
 
 - Public page: <https://kingcounty.gov/en/dept/dph/health-safety/food-safety/search-restaurant-safety-ratings>
 - ArcGIS Experience item: `d7adc44a99e8406fbf86bdaf0a856136`
@@ -18,20 +18,20 @@ The CLI uses only the Python standard library at runtime and does not require an
 Run from the repository without installing:
 
 ```sh
-PYTHONPATH=src python3 -m kc_food_safety ratings
+PYTHONPATH=src python3 -m king_county_food_safety ratings
 ```
 
 Run the packaged console script through `uv`:
 
 ```sh
-uv run kc-food-safety ratings
+uv run king-county-food-safety ratings
 ```
 
 Install the command into an active virtual environment:
 
 ```sh
 uv pip install -e .
-kc-food-safety ratings
+king-county-food-safety ratings
 ```
 
 Run tests:
@@ -45,55 +45,55 @@ PYTHONPATH=src python3 -m unittest discover -s tests
 Search facilities:
 
 ```sh
-kc-food-safety search "dick's drive in" --limit 5
-kc-food-safety search --city Seattle --rating needs-to-improve
-kc-food-safety search "98105" --jsonl --fields business_record_id,business_name,rating
+king-county-food-safety search "dick's drive in" --limit 5
+king-county-food-safety search --city Seattle --rating needs-to-improve
+king-county-food-safety search "98105" --jsonl --fields business_record_id,business_name,rating
 ```
 
 Show one facility:
 
 ```sh
-kc-food-safety facility PFE-PR-3126839
-kc-food-safety facility 2072 --with-inspections --with-violations
+king-county-food-safety facility PFE-PR-3126839
+king-county-food-safety facility 2072 --with-inspections --with-violations
 ```
 
 Show inspection history:
 
 ```sh
-kc-food-safety inspections PFE-PR-3126839 --limit 10
-kc-food-safety inspections PFE-PR-3126839 --with-violations --csv
+king-county-food-safety inspections PFE-PR-3126839 --limit 10
+king-county-food-safety inspections PFE-PR-3126839 --with-violations --csv
 ```
 
 Show violations for one inspection:
 
 ```sh
-kc-food-safety violations PFE-DABP9LQSH
+king-county-food-safety violations PFE-DABP9LQSH
 ```
 
 Compose nearby facilities, inspections, and violations:
 
 ```sh
-kc-food-safety near "111 NE 45TH ST" --city Seattle --zip 98105 \
+king-county-food-safety near "111 NE 45TH ST" --city Seattle --zip 98105 \
   --radius 0.5 \
   --jsonl \
   --fields business_record_id \
   | jq -r '.business_record_id' \
-  | kc-food-safety inspections --stdin --jsonl --fields inspection_serial_number \
+  | king-county-food-safety inspections --stdin --jsonl --fields inspection_serial_number \
   | jq -r '.inspection_serial_number' \
-  | kc-food-safety violations --stdin --jsonl
+  | king-county-food-safety violations --stdin --jsonl
 ```
 
 Find nearby facilities:
 
 ```sh
-kc-food-safety near "111 NE 45TH ST" --city Seattle --radius 0.25
-kc-food-safety near --lat 47.661115 --lon -122.327789 --radius 0.25 --tsv
+king-county-food-safety near "111 NE 45TH ST" --city Seattle --radius 0.25
+king-county-food-safety near --lat 47.661115 --lon -122.327789 --radius 0.25 --tsv
 ```
 
 Run a raw ArcGIS query:
 
 ```sh
-kc-food-safety query facilities \
+king-county-food-safety query facilities \
   --where "Business_Grade = 'Needs to Improve'" \
   --fields Business_Record_ID,Business_Name,Business_Address,Business_City,Business_Grade \
   --limit 10
@@ -117,8 +117,8 @@ kc-food-safety query facilities \
 Use `--help` on any command for exact options:
 
 ```sh
-kc-food-safety search --help
-kc-food-safety query --help
+king-county-food-safety search --help
+king-county-food-safety query --help
 ```
 
 ## Unix-Style Output
@@ -134,7 +134,7 @@ Typed commands support these output formats:
 Use `--fields` to project flat normalized output fields:
 
 ```sh
-kc-food-safety near "111 NE 45TH ST" --city Seattle \
+king-county-food-safety near "111 NE 45TH ST" --city Seattle \
   --jsonl \
   --fields distance_miles,business_record_id,business_name,rating
 ```
@@ -142,7 +142,7 @@ kc-food-safety near "111 NE 45TH ST" --city Seattle \
 Use `--fields '*'` to print every normalized field for a command:
 
 ```sh
-kc-food-safety inspections PFE-PR-3126839 --jsonl --fields '*'
+king-county-food-safety inspections PFE-PR-3126839 --jsonl --fields '*'
 ```
 
 `inspections --stdin` reads facility IDs from stdin. `violations --stdin` reads inspection serial numbers from stdin. Both commands batch those IDs into ArcGIS `IN (...)` queries internally, so shell pipelines avoid one network request per input row.
@@ -168,7 +168,7 @@ The `inspections` command applies that filter by default. Use `--all` to inspect
 ## Project Layout
 
 ```text
-src/kc_food_safety/
+src/king_county_food_safety/
   api.py         typed King County operations
   arcgis.py      ArcGIS REST client and query builder
   cli.py         argparse command surface
@@ -180,6 +180,6 @@ tests/           stdlib unittest coverage
 
 ## Constraints
 
-The CLI depends on King County's public ArcGIS services. Field names, layer URLs, and public filtering rules can change when King County updates the map. Use `kc-food-safety metadata <layer>` to inspect the current schema, and use `query` when the typed commands do not cover a new ArcGIS query shape.
+The CLI depends on King County's public ArcGIS services. Field names, layer URLs, and public filtering rules can change when King County updates the map. Use `king-county-food-safety metadata <layer>` to inspect the current schema, and use `query` when the typed commands do not cover a new ArcGIS query shape.
 
 The CLI does not cache responses. Every command reads current data from the public service.

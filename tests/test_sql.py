@@ -1,6 +1,6 @@
 import unittest
 
-from kc_food_safety import sql
+from king_county_food_safety import sql
 
 
 class SQLTests(unittest.TestCase):

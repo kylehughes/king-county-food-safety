@@ -7,9 +7,9 @@ from enum import Enum, StrEnum
 from math import atan2, cos, pi, sin, sqrt
 from typing import Any, Generic, TypeVar
 
-import kc_food_safety.sql as sql
-from kc_food_safety import constants
-from kc_food_safety.errors import FoodSafetyError
+import king_county_food_safety.sql as sql
+from king_county_food_safety import constants
+from king_county_food_safety.errors import FoodSafetyError
 
 T = TypeVar("T")
 

@@ -8,8 +8,8 @@ from datetime import UTC, datetime
 from io import StringIO
 from typing import Any
 
-from kc_food_safety.errors import FoodSafetyError
-from kc_food_safety.models import (
+from king_county_food_safety.errors import FoodSafetyError
+from king_county_food_safety.models import (
     FacilityDetail,
     FacilityRecord,
     Feature,

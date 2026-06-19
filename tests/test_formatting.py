@@ -3,8 +3,8 @@ import io
 import json
 import unittest
 
-from kc_food_safety.errors import FoodSafetyError
-from kc_food_safety.formatting import emit_records
+from king_county_food_safety.errors import FoodSafetyError
+from king_county_food_safety.formatting import emit_records
 
 
 class FormattingTests(unittest.TestCase):

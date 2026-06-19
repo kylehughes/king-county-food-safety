@@ -14,7 +14,7 @@ authors = [
 dependencies = []
 
 [project.scripts]
-kc-food-safety = "kc_food_safety.cli:main"
+king-county-food-safety = "king_county_food_safety.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]

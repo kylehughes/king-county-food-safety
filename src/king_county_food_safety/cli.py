@@ -7,10 +7,10 @@ import json
 import sys
 from collections import defaultdict
 
-from kc_food_safety.api import FoodSafetyAPI
-from kc_food_safety.arcgis import FeatureQuery, SpatialFilter
-from kc_food_safety.errors import FoodSafetyError
-from kc_food_safety.formatting import (
+from king_county_food_safety.api import FoodSafetyAPI
+from king_county_food_safety.arcgis import FeatureQuery, SpatialFilter
+from king_county_food_safety.errors import FoodSafetyError
+from king_county_food_safety.formatting import (
     FACILITY_FIELDS,
     GEOCODE_FIELDS,
     INSPECTION_FIELDS,
@@ -33,7 +33,7 @@ from kc_food_safety.formatting import (
     rating_summary_record,
     violation_record,
 )
-from kc_food_safety.models import (
+from king_county_food_safety.models import (
     FacilityDetail,
     FoodSafetyLayer,
     FoodSafetyRating,
@@ -61,7 +61,7 @@ def build_parser() -> argparse.ArgumentParser:
     """Build the root argument parser."""
 
     parser = argparse.ArgumentParser(
-        prog="kc-food-safety",
+        prog="king-county-food-safety",
         description="King County food safety ratings, inspections, violations, geocoding, and ArcGIS queries.",
     )
     subparsers = parser.add_subparsers(dest="command", required=True)
