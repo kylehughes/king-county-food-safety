@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Test (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.12", "3.14"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      # Installs the package (validates packaging metadata) plus coverage.
+      - name: Install package and coverage
+        run: python -m pip install . coverage
+
+      # Runs against src/ (PYTHONPATH wins over the installed copy) so coverage
+      # maps to the source tree. Enforces the project's 100% coverage gate.
+      - name: Run tests with coverage
+        run: |
+          PYTHONPATH=src coverage run --source=src/king_county_food_safety -m unittest discover -s tests
+          coverage report --fail-under=100
