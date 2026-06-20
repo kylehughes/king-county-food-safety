@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "king-county-food-safety"
-version = "1.0.1"
+version = "1.0.2"
 description = "CLI for King County food safety ratings, inspections, violations, geocoding, and ArcGIS queries."
 readme = "README.md"
 requires-python = ">=3.12"
