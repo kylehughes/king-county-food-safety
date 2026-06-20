@@ -1,4 +1,4 @@
-"""Command-line interface for King County food safety ratings."""
+"""Command-line interface for King County food safety."""
 
 from __future__ import annotations
 

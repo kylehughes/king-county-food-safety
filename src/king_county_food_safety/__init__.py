@@ -1,4 +1,4 @@
-"""King County food safety ratings CLI package."""
+"""King County food safety CLI package."""
 
 from king_county_food_safety.api import FoodSafetyAPI
 

@@ -1,8 +1,8 @@
-# King County Food Safety Ratings CLI
+# King County Food Safety CLI
 
-[![PyPI](https://img.shields.io/pypi/v/king-county-food-safety-ratings-cli)](https://pypi.org/project/king-county-food-safety-ratings-cli/)
-[![Python Versions](https://img.shields.io/pypi/pyversions/king-county-food-safety-ratings-cli)](https://pypi.org/project/king-county-food-safety-ratings-cli/)
-[![CI](https://github.com/kylehughes/king-county-food-safety-ratings-cli/actions/workflows/ci.yml/badge.svg)](https://github.com/kylehughes/king-county-food-safety-ratings-cli/actions/workflows/ci.yml)
+[![PyPI](https://img.shields.io/pypi/v/king-county-food-safety)](https://pypi.org/project/king-county-food-safety/)
+[![Python Versions](https://img.shields.io/pypi/pyversions/king-county-food-safety)](https://pypi.org/project/king-county-food-safety/)
+[![CI](https://github.com/kylehughes/king-county-food-safety/actions/workflows/ci.yml/badge.svg)](https://github.com/kylehughes/king-county-food-safety/actions/workflows/ci.yml)
 
 *Command-line access to King County food facility ratings, inspection history, violations, geocoding, and raw ArcGIS feature-layer queries.*
 
@@ -17,15 +17,15 @@ Use Python 3.12 or newer.
 Install from PyPI with the tool of your choice:
 
 ```sh
-uv tool install king-county-food-safety-ratings-cli
+uv tool install king-county-food-safety
 ```
 
 ```sh
-pipx install king-county-food-safety-ratings-cli
+pipx install king-county-food-safety
 ```
 
 ```sh
-pip install king-county-food-safety-ratings-cli
+pip install king-county-food-safety
 ```
 
 Any of these puts the `king-county-food-safety` command on your path.
@@ -298,7 +298,7 @@ The release workflow verifies the tag matches the package version, runs the cove
 
 ## Contributions
 
-King County Food Safety Ratings CLI is not accepting source contributions at this time. Bug reports will be considered.
+King County Food Safety CLI is not accepting source contributions at this time. Bug reports will be considered.
 
 ## Author
 
@@ -317,10 +317,10 @@ King County Food Safety Ratings CLI is not accepting source contributions at thi
 
 ## Disclaimer
 
-King County Food Safety Ratings CLI is an independent, unofficial project. It is not affiliated with, endorsed by, or sponsored by King County or Public Health — Seattle & King County. It reads publicly available data from King County's ArcGIS services and is provided "as is," without warranty of any kind. The "King County" name is used only to identify the source of the data.
+King County Food Safety CLI is an independent, unofficial project. It is not affiliated with, endorsed by, or sponsored by King County or Public Health — Seattle & King County. It reads publicly available data from King County's ArcGIS services and is provided "as is," without warranty of any kind. The "King County" name is used only to identify the source of the data.
 
 ## License
 
-King County Food Safety Ratings CLI is available under the MIT license.
+King County Food Safety CLI is available under the MIT license.
 
 See `LICENSE` for details.

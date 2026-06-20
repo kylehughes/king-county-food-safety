@@ -3,7 +3,7 @@ requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "king-county-food-safety-ratings-cli"
+name = "king-county-food-safety"
 version = "1.0.0"
 description = "CLI for King County food safety ratings, inspections, violations, geocoding, and ArcGIS queries."
 readme = "README.md"
@@ -36,9 +36,9 @@ classifiers = [
 dependencies = []
 
 [project.urls]
-Homepage = "https://github.com/kylehughes/king-county-food-safety-ratings-cli"
-Repository = "https://github.com/kylehughes/king-county-food-safety-ratings-cli"
-Issues = "https://github.com/kylehughes/king-county-food-safety-ratings-cli/issues"
+Homepage = "https://github.com/kylehughes/king-county-food-safety"
+Repository = "https://github.com/kylehughes/king-county-food-safety"
+Issues = "https://github.com/kylehughes/king-county-food-safety/issues"
 
 [project.optional-dependencies]
 dev = [
