@@ -38,9 +38,11 @@ from king_county_food_safety.formatting import (
 )
 from king_county_food_safety.models import (
     FacilityDetail,
+    Feature,
     FoodSafetyLayer,
     FoodSafetyRating,
     Geometry,
+    InspectionRecord,
     InspectionWithViolations,
     NearbyFacility,
     miles_between,
@@ -1099,7 +1101,7 @@ def _write_manifest(
 
 def _inspection_details(
     api: FoodSafetyAPI,
-    inspections: list,
+    inspections: list[Feature[InspectionRecord]],
     *,
     include_violations: bool,
 ) -> list[InspectionWithViolations]:

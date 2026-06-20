@@ -276,11 +276,12 @@ uv run --no-project --with coverage env PYTHONPATH=src \
 uv run --no-project --with coverage coverage report --fail-under=100
 ```
 
-### Lint and Format
+### Lint, Format, and Type-Check
 
 ```sh
 uv run --no-project --with ruff ruff check .
 uv run --no-project --with ruff ruff format .
+uv run --no-project --with mypy mypy --strict src/king_county_food_safety
 ```
 
 The `dev` extra (`pip install ".[dev]"`) installs `build`, `coverage`, `mypy`, and `ruff`.

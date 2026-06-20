@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass, replace
 from json import JSONDecodeError, loads
 from socket import timeout as SocketTimeout
-from typing import Any, Self
+from typing import Any, Protocol, Self, TypeVar
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
@@ -106,6 +106,16 @@ class FeatureQuery:
         return params
 
 
+class SupportsFromArcGIS(Protocol):
+    """A type decodable from an ArcGIS attributes mapping."""
+
+    @classmethod
+    def from_arcgis(cls, attributes: dict[str, Any]) -> Self: ...
+
+
+RecordT = TypeVar("RecordT", bound=SupportsFromArcGIS)
+
+
 class ArcGISClient:
     """Fetches and decodes ArcGIS REST responses."""
 
@@ -198,7 +208,8 @@ class ArcGISClient:
                     status = getattr(response, "status", 200)
                     if not 200 <= status <= 299:
                         raise HTTPStatusError(status, url)
-                    return response.read()
+                    data: bytes = response.read()
+                    return data
             except HTTPError as error:
                 raise HTTPStatusError(error.code, url) from error
             except URLError as error:
@@ -216,12 +227,12 @@ class ArcGISClient:
         return LayerInfo.from_arcgis(payload)
 
     def query(
-        self, query: FeatureQuery, record_type: type[Self]
-    ) -> list[Feature[Self]]:
+        self, query: FeatureQuery, record_type: type[RecordT]
+    ) -> list[Feature[RecordT]]:
         """Execute and decode an ArcGIS feature query."""
 
         payload = self.query_payload(query)
-        features: list[Feature[Self]] = []
+        features: list[Feature[RecordT]] = []
         for feature in payload.get("features", []):
             features.append(
                 Feature(
@@ -286,8 +297,8 @@ class ArcGISClient:
         return result
 
     def query_all(
-        self, query: FeatureQuery, record_type: type[Self], *, page_size: int = 2000
-    ) -> list[Feature[Self]]:
+        self, query: FeatureQuery, record_type: type[RecordT], *, page_size: int = 2000
+    ) -> list[Feature[RecordT]]:
         """Execute a feature query until all pages have been fetched."""
 
         if not 1 <= page_size <= 2000:
@@ -295,7 +306,7 @@ class ArcGISClient:
                 f"Invalid page size {page_size}. ArcGIS accepts values from 1 through 2000."
             )
 
-        features: list[Feature[Self]] = []
+        features: list[Feature[RecordT]] = []
         offset = query.offset or 0
         while True:
             page = self.query(
