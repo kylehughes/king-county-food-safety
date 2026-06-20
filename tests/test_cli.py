@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import contextlib
 from datetime import date
+from importlib.metadata import PackageNotFoundError
 import io
 import json
 from pathlib import Path
@@ -10,7 +11,8 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from king_county_food_safety import cli
+import king_county_food_safety
+from king_county_food_safety import __version__, cli
 from king_county_food_safety.errors import FoodSafetyError
 from king_county_food_safety.models import (
     FacilityRecord,
@@ -139,6 +141,24 @@ class FailingSearchAPI:
 
 
 class CLITests(unittest.TestCase):
+    def test_version_flag_prints_package_version(self) -> None:
+        stdout = io.StringIO()
+        with self.assertRaises(SystemExit) as exit_error:
+            with contextlib.redirect_stdout(stdout):
+                cli.main(["--version"])
+        self.assertEqual(exit_error.exception.code, 0)
+        self.assertEqual(stdout.getvalue(), f"king-county-food-safety {__version__}\n")
+
+    def test_resolve_version_reads_package_metadata(self) -> None:
+        with patch.object(king_county_food_safety, "version", return_value="9.9.9"):
+            self.assertEqual(king_county_food_safety._resolve_version(), "9.9.9")
+
+    def test_resolve_version_falls_back_when_metadata_missing(self) -> None:
+        with patch.object(
+            king_county_food_safety, "version", side_effect=PackageNotFoundError
+        ):
+            self.assertEqual(king_county_food_safety._resolve_version(), "unknown")
+
     def test_root_network_options_configure_client(self) -> None:
         api = FakeAPI()
         with patch(

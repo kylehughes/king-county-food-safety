@@ -93,6 +93,11 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Show tracebacks for expected CLI/API failures.",
     )
+    parser.add_argument(
+        "--version",
+        action="version",
+        version=f"%(prog)s {__version__}",
+    )
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     output_parent = argparse.ArgumentParser(add_help=False)
