@@ -38,9 +38,13 @@ class FoodSafetyAPI:
     def count(self, layer: FoodSafetyLayer, where_clause: str = "1=1") -> int:
         """Count records in a layer."""
 
-        return self.client.count(FeatureQuery(layer=layer, where_clause=where_clause, return_count_only=True))
+        return self.client.count(
+            FeatureQuery(layer=layer, where_clause=where_clause, return_count_only=True)
+        )
 
-    def facility(self, facility_id: str, *, include_inactive: bool = False) -> Feature[FacilityRecord]:
+    def facility(
+        self, facility_id: str, *, include_inactive: bool = False
+    ) -> Feature[FacilityRecord]:
         """Return a facility by `Business_Record_ID` or `OBJECTID`."""
 
         query = FeatureQuery(
@@ -67,7 +71,9 @@ class FoodSafetyAPI:
         """Return facilities for many business record IDs or object IDs."""
 
         ids = self._unique_non_empty(facility_ids)
-        business_record_ids = [facility_id for facility_id in ids if not facility_id.isdecimal()]
+        business_record_ids = [
+            facility_id for facility_id in ids if not facility_id.isdecimal()
+        ]
         object_ids = [facility_id for facility_id in ids if facility_id.isdecimal()]
         facilities: list[Feature[FacilityRecord]] = []
 
@@ -105,7 +111,14 @@ class FoodSafetyAPI:
             )
         return facilities
 
-    def geocode(self, address: str, *, city: str | None = None, zip_code: str | None = None, limit: int = 5) -> list[GeocodeCandidate]:
+    def geocode(
+        self,
+        address: str,
+        *,
+        city: str | None = None,
+        zip_code: str | None = None,
+        limit: int = 5,
+    ) -> list[GeocodeCandidate]:
         """Geocode an address with King County's public locator."""
 
         return self.client.geocode(address, city=city, zip_code=zip_code, limit=limit)
@@ -126,7 +139,9 @@ class FoodSafetyAPI:
     ) -> list[Feature[InspectionRecord]]:
         """Return inspections for a facility business record ID or object ID."""
 
-        facility = self.facility(facility_id, include_inactive=include_inactive_facility)
+        facility = self.facility(
+            facility_id, include_inactive=include_inactive_facility
+        )
         business_record_id = facility.attributes.business_record_id
         if business_record_id is None:
             raise FoodSafetyError(f"No business record ID found for '{facility_id}'.")
@@ -216,7 +231,9 @@ class FoodSafetyAPI:
                 fields=("*",),
                 order_by_fields=("Inspection_Date DESC",),
             )
-            inspections.extend(self.client.query_all(query, InspectionRecord, page_size=MAX_PAGE_SIZE))
+            inspections.extend(
+                self.client.query_all(query, InspectionRecord, page_size=MAX_PAGE_SIZE)
+            )
 
         inspections.sort(
             key=lambda inspection: (
@@ -253,19 +270,27 @@ class FoodSafetyAPI:
         query = FeatureQuery(
             layer=FoodSafetyLayer.FACILITIES,
             where_clause=sql.and_(
-                self._facility_status_clause(include_inactive=include_inactive, status=status),
-                sql.contains("Business_Establishment_Descr", establishment_type) if establishment_type else None,
+                self._facility_status_clause(
+                    include_inactive=include_inactive, status=status
+                ),
+                sql.contains("Business_Establishment_Descr", establishment_type)
+                if establishment_type
+                else None,
                 rating.where_clause if rating else None,
                 self._timestamp_from_clause("Load_DT_TM", updated_since),
             ),
             return_geometry=True,
             order_by_fields=("Business_Name ASC",),
             limit=limit,
-            spatial_filter=SpatialFilter(latitude=latitude, longitude=longitude, radius_miles=radius_miles),
+            spatial_filter=SpatialFilter(
+                latitude=latitude, longitude=longitude, radius_miles=radius_miles
+            ),
         )
         return self.client.query(query, FacilityRecord)
 
-    def rating_summary(self, *, include_inactive: bool = False) -> list[Feature[RatingSummary]]:
+    def rating_summary(
+        self, *, include_inactive: bool = False
+    ) -> list[Feature[RatingSummary]]:
         """Return grouped facility counts by rating."""
 
         query = FeatureQuery(
@@ -296,11 +321,17 @@ class FoodSafetyAPI:
         query = FeatureQuery(
             layer=FoodSafetyLayer.FACILITIES,
             where_clause=sql.and_(
-                self._facility_status_clause(include_inactive=include_inactive, status=status),
+                self._facility_status_clause(
+                    include_inactive=include_inactive, status=status
+                ),
                 self._search_text_clause(text),
                 sql.contains("Business_City", city) if city else None,
-                f"Business_Location_Zip = {sql.string_literal(zip_code)}" if zip_code else None,
-                sql.contains("Business_Establishment_Descr", establishment_type) if establishment_type else None,
+                f"Business_Location_Zip = {sql.string_literal(zip_code)}"
+                if zip_code
+                else None,
+                sql.contains("Business_Establishment_Descr", establishment_type)
+                if establishment_type
+                else None,
                 rating.where_clause if rating else None,
                 self._timestamp_from_clause("Load_DT_TM", updated_since),
             ),
@@ -364,16 +395,24 @@ class FoodSafetyAPI:
                     ),
                 ),
                 fields=("*",),
-                order_by_fields=("Inspection_Serial_Num ASC", "Violation_Points DESC", "Violation_Descr ASC"),
+                order_by_fields=(
+                    "Inspection_Serial_Num ASC",
+                    "Violation_Points DESC",
+                    "Violation_Descr ASC",
+                ),
             )
-            violations.extend(self.client.query_all(query, ViolationRecord, page_size=MAX_PAGE_SIZE))
+            violations.extend(
+                self.client.query_all(query, ViolationRecord, page_size=MAX_PAGE_SIZE)
+            )
         return violations
 
     @property
     def _active_facility_clause(self) -> str:
         return "Business_Status = 'Active'"
 
-    def _facility_status_clause(self, *, include_inactive: bool, status: str | None) -> str | None:
+    def _facility_status_clause(
+        self, *, include_inactive: bool, status: str | None
+    ) -> str | None:
         if status:
             return f"Business_Status = {sql.string_literal(status)}"
         if include_inactive:
@@ -388,9 +427,13 @@ class FoodSafetyAPI:
             )
         return f"Business_Record_ID = {sql.string_literal(facility_id)}"
 
-    def _business_record_ids_for_facility_ids(self, facility_ids: list[str], *, include_inactive: bool) -> list[str]:
+    def _business_record_ids_for_facility_ids(
+        self, facility_ids: list[str], *, include_inactive: bool
+    ) -> list[str]:
         ids = self._unique_non_empty(facility_ids)
-        business_record_ids = [facility_id for facility_id in ids if not facility_id.isdecimal()]
+        business_record_ids = [
+            facility_id for facility_id in ids if not facility_id.isdecimal()
+        ]
         object_ids = [facility_id for facility_id in ids if facility_id.isdecimal()]
 
         if object_ids:
@@ -470,7 +513,9 @@ class FoodSafetyAPI:
             sql.contains("Violation_Descr", description) if description else None,
             f"Violation_Points >= {points_min}" if points_min is not None else None,
             f"Violation_Points <= {points_max}" if points_max is not None else None,
-            f"Violation_Type = {sql.string_literal(violation_type.upper())}" if violation_type else None,
+            f"Violation_Type = {sql.string_literal(violation_type.upper())}"
+            if violation_type
+            else None,
         )
 
     def _search_text_clause(self, text: str | None) -> str | None:

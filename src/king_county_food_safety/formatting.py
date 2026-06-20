@@ -19,7 +19,6 @@ from king_county_food_safety.models import (
     Geometry,
     InspectionRecord,
     InspectionWithViolations,
-    LayerInfo,
     NearbyFacility,
     RatingSummary,
     ViolationRecord,
@@ -107,7 +106,11 @@ def date_time(milliseconds: int | None) -> str | None:
 
     if milliseconds is None:
         return None
-    return datetime.fromtimestamp(milliseconds / 1000, UTC).isoformat().replace("+00:00", "Z")
+    return (
+        datetime.fromtimestamp(milliseconds / 1000, UTC)
+        .isoformat()
+        .replace("+00:00", "Z")
+    )
 
 
 def display(value: Any) -> str:
@@ -127,7 +130,9 @@ def emit_records(
 ) -> None:
     """Print normalized records in the requested format."""
 
-    selected_fields = _selected_fields(records, default_fields=default_fields, fields=fields)
+    selected_fields = _selected_fields(
+        records, default_fields=default_fields, fields=fields
+    )
     projected = [_project(record, selected_fields) for record in records]
 
     if output_format == "csv":
@@ -140,7 +145,13 @@ def emit_records(
     elif output_format == "tsv":
         print_delimited(selected_fields, projected, delimiter="\t")
     else:
-        print_table(selected_fields, [[_text(record.get(field)) for field in selected_fields] for record in projected])
+        print_table(
+            selected_fields,
+            [
+                [_text(record.get(field)) for field in selected_fields]
+                for record in projected
+            ],
+        )
 
 
 def facility_record(facility: Feature[FacilityRecord]) -> dict[str, Any]:
@@ -159,9 +170,13 @@ def facility_record(facility: Feature[FacilityRecord]) -> dict[str, Any]:
         "business_record_id": record.business_record_id,
         "business_status": record.business_status,
         "business_zip": record.business_zip,
-        "latitude": facility.geometry.y if facility.geometry else record.business_latitude,
+        "latitude": facility.geometry.y
+        if facility.geometry
+        else record.business_latitude,
         "load_date": date_time(record.load_date_milliseconds),
-        "longitude": facility.geometry.x if facility.geometry else record.business_longitude,
+        "longitude": facility.geometry.x
+        if facility.geometry
+        else record.business_longitude,
         "object_id": record.object_id,
         "parcel_latitude": record.parcel_latitude,
         "parcel_longitude": record.parcel_longitude,
@@ -186,11 +201,15 @@ def geocode_record(candidate: GeocodeCandidate) -> dict[str, Any]:
 
     return {
         "address": candidate.address,
-        "address_type": candidate.attributes.address_type if candidate.attributes else None,
+        "address_type": candidate.attributes.address_type
+        if candidate.attributes
+        else None,
         "city": candidate.attributes.city if candidate.attributes else None,
         "latitude": candidate.location.y,
         "longitude": candidate.location.x,
-        "match_address": candidate.attributes.match_address if candidate.attributes else None,
+        "match_address": candidate.attributes.match_address
+        if candidate.attributes
+        else None,
         "score": candidate.score,
         "zip": candidate.attributes.zip if candidate.attributes else None,
     }
@@ -213,7 +232,9 @@ def inspection_record(inspection: Feature[InspectionRecord]) -> dict[str, Any]:
     }
 
 
-def inspection_violation_records(items: list[InspectionWithViolations]) -> list[dict[str, Any]]:
+def inspection_violation_records(
+    items: list[InspectionWithViolations],
+) -> list[dict[str, Any]]:
     """Return normalized inspection/violation join records."""
 
     records: list[dict[str, Any]] = []
@@ -313,13 +334,17 @@ def print_json(value: Any) -> None:
     print(json.dumps(value, indent=2, sort_keys=True))
 
 
-def print_delimited(headers: list[str], records: list[dict[str, Any]], *, delimiter: str) -> None:
+def print_delimited(
+    headers: list[str], records: list[dict[str, Any]], *, delimiter: str
+) -> None:
     """Print CSV or TSV records."""
 
     stream = StringIO()
     writer = csv.writer(stream, delimiter=delimiter, lineterminator="\n")
     writer.writerow(headers)
-    writer.writerows([_text(record.get(header)) for header in headers] for record in records)
+    writer.writerows(
+        [_text(record.get(header)) for header in headers] for record in records
+    )
     print(stream.getvalue(), end="")
 
 
@@ -331,7 +356,10 @@ def print_table(headers: list[str], rows: list[list[str]]) -> None:
         return
 
     widths = [
-        max(len(headers[index]), *(len(row[index]) if index < len(row) else 0 for row in rows))
+        max(
+            len(headers[index]),
+            *(len(row[index]) if index < len(row) else 0 for row in rows),
+        )
         for index in range(len(headers))
     ]
     print(_table_row(headers, widths))
@@ -401,7 +429,10 @@ def _selected_fields(
 
 
 def _table_row(values: list[str], widths: list[int]) -> str:
-    return "  ".join((values[index] if index < len(values) else "").ljust(widths[index]) for index in range(len(widths)))
+    return "  ".join(
+        (values[index] if index < len(values) else "").ljust(widths[index])
+        for index in range(len(widths))
+    )
 
 
 def _text(value: Any) -> str:

@@ -5,7 +5,12 @@ from urllib.error import HTTPError, URLError
 from unittest.mock import Mock, patch
 
 from king_county_food_safety.arcgis import ArcGISClient, FeatureQuery
-from king_county_food_safety.errors import ArcGISError, FoodSafetyError, HTTPStatusError, NetworkError
+from king_county_food_safety.errors import (
+    ArcGISError,
+    FoodSafetyError,
+    HTTPStatusError,
+    NetworkError,
+)
 from king_county_food_safety.models import Feature, FoodSafetyLayer
 
 
@@ -20,7 +25,9 @@ class PagingClient(ArcGISClient):
         self.calls: list[tuple[int | None, int | None]] = []
         self.pages = pages
 
-    def query(self, query: FeatureQuery, record_type: type[DummyRecord]) -> list[Feature[DummyRecord]]:
+    def query(
+        self, query: FeatureQuery, record_type: type[DummyRecord]
+    ) -> list[Feature[DummyRecord]]:
         self.calls.append((query.limit, query.offset))
         return self.pages.pop(0)
 
@@ -47,7 +54,9 @@ class ArcGISClientTests(unittest.TestCase):
 
         for failure in failures:
             with self.subTest(error=type(failure).__name__):
-                with patch("king_county_food_safety.arcgis.urlopen", side_effect=failure):
+                with patch(
+                    "king_county_food_safety.arcgis.urlopen", side_effect=failure
+                ):
                     with self.assertRaises(NetworkError) as error:
                         ArcGISClient(timeout=0.1).get_bytes(url)
 
@@ -64,7 +73,9 @@ class ArcGISClientTests(unittest.TestCase):
         response.__exit__ = Mock(return_value=None)
 
         with patch("king_county_food_safety.arcgis.urlopen", return_value=response):
-            self.assertEqual(ArcGISClient().get_bytes("https://example.test/query"), b"{}")
+            self.assertEqual(
+                ArcGISClient().get_bytes("https://example.test/query"), b"{}"
+            )
 
         bad_status = Mock()
         bad_status.status = 503
@@ -74,7 +85,9 @@ class ArcGISClientTests(unittest.TestCase):
             with self.assertRaises(HTTPStatusError):
                 ArcGISClient().get_bytes("https://example.test/query")
 
-        http_error = HTTPError("https://example.test/query", 500, "Server Error", {}, BytesIO(b""))
+        http_error = HTTPError(
+            "https://example.test/query", 500, "Server Error", {}, BytesIO(b"")
+        )
         with patch("king_county_food_safety.arcgis.urlopen", side_effect=http_error):
             with self.assertRaises(HTTPStatusError) as error:
                 ArcGISClient().get_bytes("https://example.test/query")
@@ -88,8 +101,13 @@ class ArcGISClientTests(unittest.TestCase):
         response.__enter__ = Mock(return_value=response)
         response.__exit__ = Mock(return_value=None)
 
-        with patch("king_county_food_safety.arcgis.urlopen", side_effect=[URLError("temporary"), response]) as urlopen:
-            self.assertEqual(ArcGISClient(retries=1).get_bytes("https://example.test/query"), b"ok")
+        with patch(
+            "king_county_food_safety.arcgis.urlopen",
+            side_effect=[URLError("temporary"), response],
+        ) as urlopen:
+            self.assertEqual(
+                ArcGISClient(retries=1).get_bytes("https://example.test/query"), b"ok"
+            )
         self.assertEqual(urlopen.call_count, 2)
 
         with self.assertRaises(FoodSafetyError):
@@ -101,14 +119,20 @@ class ArcGISClientTests(unittest.TestCase):
         client = ArcGISClient()
 
         with patch.object(client, "get_bytes", return_value=b'{"count": 3}'):
-            self.assertEqual(client.get_json("https://example.test/query"), {"count": 3})
+            self.assertEqual(
+                client.get_json("https://example.test/query"), {"count": 3}
+            )
         with patch.object(client, "get_bytes", return_value=b"not-json"):
             with self.assertRaises(FoodSafetyError):
                 client.get_json("https://example.test/query")
         with patch.object(client, "get_bytes", return_value=b'["not-object"]'):
             with self.assertRaises(FoodSafetyError):
                 client.get_json("https://example.test/query")
-        with patch.object(client, "get_bytes", return_value=b'{"error":{"code":400,"message":"Bad","details":["Nope"]}}'):
+        with patch.object(
+            client,
+            "get_bytes",
+            return_value=b'{"error":{"code":400,"message":"Bad","details":["Nope"]}}',
+        ):
             with self.assertRaises(ArcGISError) as error:
                 client.get_json("https://example.test/query")
         self.assertEqual(error.exception.code, 400)
@@ -117,7 +141,9 @@ class ArcGISClientTests(unittest.TestCase):
     def test_count_requires_count_field(self) -> None:
         client = ArcGISClient()
         with patch.object(client, "get_json", return_value={"count": "4"}):
-            self.assertEqual(client.count(FeatureQuery(layer=FoodSafetyLayer.FACILITIES)), 4)
+            self.assertEqual(
+                client.count(FeatureQuery(layer=FoodSafetyLayer.FACILITIES)), 4
+            )
         with patch.object(client, "get_json", return_value={}):
             with self.assertRaises(FoodSafetyError):
                 client.count(FeatureQuery(layer=FoodSafetyLayer.FACILITIES))
@@ -130,7 +156,12 @@ class ArcGISClientTests(unittest.TestCase):
                     "address": "111 NE 45TH ST",
                     "location": {"x": -122.3, "y": 47.6},
                     "score": 100,
-                    "attributes": {"Addr_type": "PointAddress", "City": "Seattle", "Match_addr": "111 NE 45TH ST", "ZIP": "98105"},
+                    "attributes": {
+                        "Addr_type": "PointAddress",
+                        "City": "Seattle",
+                        "Match_addr": "111 NE 45TH ST",
+                        "ZIP": "98105",
+                    },
                 }
             ]
         }
@@ -139,8 +170,15 @@ class ArcGISClientTests(unittest.TestCase):
             self.assertEqual(candidates[0].address, "111 NE 45TH ST")
             self.assertIn("SingleLine=111+NE+45TH+ST", get_json.call_args.args[0])
 
-        with patch.object(client, "get_json", return_value={"candidates": []}) as get_json:
-            self.assertEqual(client.geocode("111 NE 45TH ST", city="Seattle", zip_code="98105", limit=2), [])
+        with patch.object(
+            client, "get_json", return_value={"candidates": []}
+        ) as get_json:
+            self.assertEqual(
+                client.geocode(
+                    "111 NE 45TH ST", city="Seattle", zip_code="98105", limit=2
+                ),
+                [],
+            )
             url = get_json.call_args.args[0]
             self.assertIn("Street=111+NE+45TH+ST", url)
             self.assertIn("City=Seattle", url)
@@ -158,15 +196,29 @@ class ArcGISClientTests(unittest.TestCase):
         }
         feature_payload = {
             "features": [
-                {"attributes": {"OBJECTID": 1, "value": 12}, "geometry": {"x": -122.3, "y": 47.6}},
+                {
+                    "attributes": {"OBJECTID": 1, "value": 12},
+                    "geometry": {"x": -122.3, "y": 47.6},
+                },
             ]
         }
-        with patch.object(client, "get_json", side_effect=[layer_payload, feature_payload, feature_payload]) as get_json:
-            self.assertEqual(client.layer_info(FoodSafetyLayer.FACILITIES).name, "Facilities")
-            features = client.query(FeatureQuery(layer=FoodSafetyLayer.FACILITIES), DummyArcGISRecord)
+        with patch.object(
+            client,
+            "get_json",
+            side_effect=[layer_payload, feature_payload, feature_payload],
+        ) as get_json:
+            self.assertEqual(
+                client.layer_info(FoodSafetyLayer.FACILITIES).name, "Facilities"
+            )
+            features = client.query(
+                FeatureQuery(layer=FoodSafetyLayer.FACILITIES), DummyArcGISRecord
+            )
             self.assertEqual(features[0].attributes.value, 12)
             self.assertEqual(features[0].geometry.x, -122.3)
-            self.assertEqual(client.query_payload(FeatureQuery(layer=FoodSafetyLayer.FACILITIES)), feature_payload)
+            self.assertEqual(
+                client.query_payload(FeatureQuery(layer=FoodSafetyLayer.FACILITIES)),
+                feature_payload,
+            )
             self.assertEqual(get_json.call_count, 3)
 
     def test_query_all_fetches_pages_until_short_page(self) -> None:
@@ -191,7 +243,10 @@ class ArcGISClientTests(unittest.TestCase):
             [
                 {
                     "fields": [{"name": "OBJECTID"}],
-                    "features": [{"attributes": {"OBJECTID": 1}}, {"attributes": {"OBJECTID": 2}}],
+                    "features": [
+                        {"attributes": {"OBJECTID": 1}},
+                        {"attributes": {"OBJECTID": 2}},
+                    ],
                 },
                 {
                     "fields": [{"name": "OBJECTID"}],
@@ -218,7 +273,9 @@ class ArcGISClientTests(unittest.TestCase):
         )
         self.assertEqual(client.calls, [(2, 0), (2, 2)])
 
-    def test_query_all_payload_continues_after_short_exceeded_transfer_page(self) -> None:
+    def test_query_all_payload_continues_after_short_exceeded_transfer_page(
+        self,
+    ) -> None:
         client = PayloadPagingClient(
             [
                 {
@@ -252,12 +309,16 @@ class ArcGISClientTests(unittest.TestCase):
         self.assertEqual(client.calls, [(2, 0), (2, 1)])
 
         with self.assertRaises(FoodSafetyError):
-            PayloadPagingClient([{"exceededTransferLimit": True, "features": []}]).query_all_payload(
+            PayloadPagingClient(
+                [{"exceededTransferLimit": True, "features": []}]
+            ).query_all_payload(
                 FeatureQuery(layer=FoodSafetyLayer.FACILITIES),
                 page_size=2,
             )
 
-    def test_query_all_payload_handles_count_ids_limits_and_invalid_paging(self) -> None:
+    def test_query_all_payload_handles_count_ids_limits_and_invalid_paging(
+        self,
+    ) -> None:
         count_client = PayloadPagingClient([{"count": 2}])
         self.assertEqual(
             count_client.query_all_payload(
@@ -286,13 +347,19 @@ class ArcGISClientTests(unittest.TestCase):
         self.assertEqual(limited_client.calls, [(2, 5)])
 
         with self.assertRaises(FoodSafetyError):
-            PayloadPagingClient([]).query_all_payload(FeatureQuery(layer=FoodSafetyLayer.FACILITIES), page_size=0)
+            PayloadPagingClient([]).query_all_payload(
+                FeatureQuery(layer=FoodSafetyLayer.FACILITIES), page_size=0
+            )
         with self.assertRaises(FoodSafetyError):
-            PayloadPagingClient([]).query_all_payload(FeatureQuery(layer=FoodSafetyLayer.FACILITIES), record_limit=0)
+            PayloadPagingClient([]).query_all_payload(
+                FeatureQuery(layer=FoodSafetyLayer.FACILITIES), record_limit=0
+            )
 
     def test_query_all_rejects_invalid_page_size(self) -> None:
         with self.assertRaises(FoodSafetyError):
-            PagingClient([]).query_all(FeatureQuery(layer=FoodSafetyLayer.FACILITIES), DummyRecord, page_size=0)
+            PagingClient([]).query_all(
+                FeatureQuery(layer=FoodSafetyLayer.FACILITIES), DummyRecord, page_size=0
+            )
 
 
 class DummyArcGISRecord:

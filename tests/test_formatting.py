@@ -30,8 +30,16 @@ class FormattingTests(unittest.TestCase):
         with contextlib.redirect_stdout(stream):
             emit_records(
                 [
-                    {"business_record_id": "A", "business_name": "Alpha", "rating": "Good"},
-                    {"business_record_id": "B", "business_name": "Beta", "rating": "Excellent"},
+                    {
+                        "business_record_id": "A",
+                        "business_name": "Alpha",
+                        "rating": "Good",
+                    },
+                    {
+                        "business_record_id": "B",
+                        "business_name": "Beta",
+                        "rating": "Excellent",
+                    },
                 ],
                 output_format="jsonl",
                 default_fields=["business_record_id", "business_name", "rating"],
@@ -40,23 +48,38 @@ class FormattingTests(unittest.TestCase):
 
         lines = stream.getvalue().splitlines()
         self.assertEqual(len(lines), 2)
-        self.assertEqual(json.loads(lines[0]), {"business_record_id": "A", "rating": "Good"})
-        self.assertEqual(json.loads(lines[1]), {"business_record_id": "B", "rating": "Excellent"})
+        self.assertEqual(
+            json.loads(lines[0]), {"business_record_id": "A", "rating": "Good"}
+        )
+        self.assertEqual(
+            json.loads(lines[1]), {"business_record_id": "B", "rating": "Excellent"}
+        )
 
     def test_csv_prints_projected_header_and_rows(self) -> None:
         stream = io.StringIO()
         with contextlib.redirect_stdout(stream):
             emit_records(
                 [
-                    {"business_record_id": "A", "business_name": "Alpha", "rating": "Good"},
-                    {"business_record_id": "B", "business_name": "Beta, LLC", "rating": "Excellent"},
+                    {
+                        "business_record_id": "A",
+                        "business_name": "Alpha",
+                        "rating": "Good",
+                    },
+                    {
+                        "business_record_id": "B",
+                        "business_name": "Beta, LLC",
+                        "rating": "Excellent",
+                    },
                 ],
                 output_format="csv",
                 default_fields=["business_record_id", "business_name", "rating"],
                 fields=["business_record_id", "business_name"],
             )
 
-        self.assertEqual(stream.getvalue(), 'business_record_id,business_name\nA,Alpha\nB,"Beta, LLC"\n')
+        self.assertEqual(
+            stream.getvalue(),
+            'business_record_id,business_name\nA,Alpha\nB,"Beta, LLC"\n',
+        )
 
     def test_tsv_prints_projected_header_and_rows(self) -> None:
         stream = io.StringIO()
@@ -67,7 +90,9 @@ class FormattingTests(unittest.TestCase):
                 default_fields=["inspection_serial_number", "inspection_score"],
             )
 
-        self.assertEqual(stream.getvalue(), "inspection_serial_number\tinspection_score\nPFE-1\t5\n")
+        self.assertEqual(
+            stream.getvalue(), "inspection_serial_number\tinspection_score\nPFE-1\t5\n"
+        )
 
     def test_unknown_field_fails_with_available_fields(self) -> None:
         with self.assertRaises(FoodSafetyError):
@@ -95,19 +120,26 @@ class FormattingTests(unittest.TestCase):
 
     def test_display_coordinate_and_date_helpers(self) -> None:
         self.assertEqual(coordinate_display(None), "-")
-        self.assertEqual(coordinate_display(Geometry(x=-122.3, y=47.6)), "47.600000, -122.300000")
+        self.assertEqual(
+            coordinate_display(Geometry(x=-122.3, y=47.6)), "47.600000, -122.300000"
+        )
         self.assertIsNone(date_time(None))
         self.assertEqual(display(None), "-")
         self.assertEqual(display(""), "-")
         self.assertEqual(display(5), "5")
 
     def test_inspection_violation_records_handles_missing_violations(self) -> None:
-        records = inspection_violation_records([InspectionWithViolations(inspection=_inspection(), violations=[])])
+        records = inspection_violation_records(
+            [InspectionWithViolations(inspection=_inspection(), violations=[])]
+        )
 
         self.assertIsNone(records[0]["violation_type"])
 
     def test_print_facility_detail_human_table_and_machine_projection(self) -> None:
-        detail = FacilityDetail(facility=_facility(), inspections=[InspectionWithViolations(_inspection(), [])])
+        detail = FacilityDetail(
+            facility=_facility(),
+            inspections=[InspectionWithViolations(_inspection(), [])],
+        )
         stream = io.StringIO()
         with contextlib.redirect_stdout(stream):
             print_facility_detail(detail, output_format="table")
@@ -118,8 +150,12 @@ class FormattingTests(unittest.TestCase):
 
         stream = io.StringIO()
         with contextlib.redirect_stdout(stream):
-            print_facility_detail(detail, output_format="json", fields=["business_record_id"])
-        self.assertEqual(json.loads(stream.getvalue()), [{"business_record_id": "PFE-1"}])
+            print_facility_detail(
+                detail, output_format="json", fields=["business_record_id"]
+            )
+        self.assertEqual(
+            json.loads(stream.getvalue()), [{"business_record_id": "PFE-1"}]
+        )
 
     def test_print_json_and_table_empty_rows(self) -> None:
         stream = io.StringIO()

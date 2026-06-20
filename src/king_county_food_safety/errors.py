@@ -10,7 +10,9 @@ class FoodSafetyError(Exception):
 class ArcGISError(FoodSafetyError):
     """Error returned by an ArcGIS REST endpoint."""
 
-    def __init__(self, code: int, message: str, details: list[str] | None = None) -> None:
+    def __init__(
+        self, code: int, message: str, details: list[str] | None = None
+    ) -> None:
         self.code = code
         self.message = message
         self.details = details or []

@@ -11,12 +11,16 @@ from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
 from king_county_food_safety import constants
-from king_county_food_safety.errors import ArcGISError, FoodSafetyError, HTTPStatusError, NetworkError
+from king_county_food_safety.errors import (
+    ArcGISError,
+    FoodSafetyError,
+    HTTPStatusError,
+    NetworkError,
+)
 from king_county_food_safety.models import (
     Feature,
     FoodSafetyLayer,
     GeocodeCandidate,
-    Geometry,
     LayerInfo,
     geometry_from_arcgis,
 )
@@ -52,7 +56,9 @@ class FeatureQuery:
         """Validate ArcGIS paging limits."""
 
         if self.limit is not None and not 1 <= self.limit <= 2000:
-            raise FoodSafetyError(f"Invalid limit {self.limit}. ArcGIS accepts values from 1 through 2000.")
+            raise FoodSafetyError(
+                f"Invalid limit {self.limit}. ArcGIS accepts values from 1 through 2000."
+            )
 
     def url(self) -> str:
         """Return the full request URL for this query."""
@@ -70,7 +76,9 @@ class FeatureQuery:
         }
 
         if self.group_by_fields_for_statistics:
-            params["groupByFieldsForStatistics"] = ",".join(self.group_by_fields_for_statistics)
+            params["groupByFieldsForStatistics"] = ",".join(
+                self.group_by_fields_for_statistics
+            )
         if self.limit is not None:
             params["resultRecordCount"] = str(self.limit)
         if self.offset is not None:
@@ -116,13 +124,24 @@ class ArcGISClient:
         try:
             return int(payload["count"])
         except KeyError as error:
-            raise FoodSafetyError("ArcGIS count response did not include `count`.") from error
+            raise FoodSafetyError(
+                "ArcGIS count response did not include `count`."
+            ) from error
 
-    def geocode(self, address: str, *, city: str | None = None, zip_code: str | None = None, limit: int = 5) -> list[GeocodeCandidate]:
+    def geocode(
+        self,
+        address: str,
+        *,
+        city: str | None = None,
+        zip_code: str | None = None,
+        limit: int = 5,
+    ) -> list[GeocodeCandidate]:
         """Fetch King County geocoder candidates."""
 
         if not 1 <= limit <= 2000:
-            raise FoodSafetyError(f"Invalid limit {limit}. ArcGIS accepts values from 1 through 2000.")
+            raise FoodSafetyError(
+                f"Invalid limit {limit}. ArcGIS accepts values from 1 through 2000."
+            )
 
         params = {
             "f": "json",
@@ -139,8 +158,13 @@ class ArcGISClient:
             if zip_code is not None:
                 params["ZIP"] = zip_code
 
-        payload = self.get_json(f"{constants.KING_COUNTY_GEOCODER}/findAddressCandidates?{urlencode(params)}")
-        return [GeocodeCandidate.from_arcgis(candidate) for candidate in payload.get("candidates", [])]
+        payload = self.get_json(
+            f"{constants.KING_COUNTY_GEOCODER}/findAddressCandidates?{urlencode(params)}"
+        )
+        return [
+            GeocodeCandidate.from_arcgis(candidate)
+            for candidate in payload.get("candidates", [])
+        ]
 
     def get_json(self, url: str) -> dict[str, Any]:
         """Fetch and decode JSON from a URL."""
@@ -191,7 +215,9 @@ class ArcGISClient:
         payload = self.get_json(f"{layer.url}?{urlencode({'f': 'json'})}")
         return LayerInfo.from_arcgis(payload)
 
-    def query(self, query: FeatureQuery, record_type: type[Self]) -> list[Feature[Self]]:
+    def query(
+        self, query: FeatureQuery, record_type: type[Self]
+    ) -> list[Feature[Self]]:
         """Execute and decode an ArcGIS feature query."""
 
         payload = self.query_payload(query)
@@ -222,7 +248,9 @@ class ArcGISClient:
         if query.return_count_only or query.return_ids_only:
             return self.query_payload(query)
         if not 1 <= page_size <= 2000:
-            raise FoodSafetyError(f"Invalid page size {page_size}. ArcGIS accepts values from 1 through 2000.")
+            raise FoodSafetyError(
+                f"Invalid page size {page_size}. ArcGIS accepts values from 1 through 2000."
+            )
         if record_limit is not None and record_limit < 1:
             raise FoodSafetyError("Record limit must be at least 1.")
 
@@ -230,15 +258,25 @@ class ArcGISClient:
         payload: dict[str, Any] | None = None
         offset = query.offset or 0
         while record_limit is None or len(features) < record_limit:
-            remaining = page_size if record_limit is None else min(page_size, record_limit - len(features))
+            remaining = (
+                page_size
+                if record_limit is None
+                else min(page_size, record_limit - len(features))
+            )
             page = self.query_payload(replace(query, limit=remaining, offset=offset))
             if payload is None:
-                payload = {key: value for key, value in page.items() if key not in {"exceededTransferLimit", "features"}}
+                payload = {
+                    key: value
+                    for key, value in page.items()
+                    if key not in {"exceededTransferLimit", "features"}
+                }
             page_features = page.get("features", [])
             features.extend(page_features)
             exceeded_transfer_limit = bool(page.get("exceededTransferLimit"))
             if exceeded_transfer_limit and not page_features:
-                raise FoodSafetyError("ArcGIS reported more rows but returned an empty page.")
+                raise FoodSafetyError(
+                    "ArcGIS reported more rows but returned an empty page."
+                )
             if len(page_features) < remaining and not exceeded_transfer_limit:
                 break
             offset += len(page_features)
@@ -247,16 +285,22 @@ class ArcGISClient:
         result["features"] = features
         return result
 
-    def query_all(self, query: FeatureQuery, record_type: type[Self], *, page_size: int = 2000) -> list[Feature[Self]]:
+    def query_all(
+        self, query: FeatureQuery, record_type: type[Self], *, page_size: int = 2000
+    ) -> list[Feature[Self]]:
         """Execute a feature query until all pages have been fetched."""
 
         if not 1 <= page_size <= 2000:
-            raise FoodSafetyError(f"Invalid page size {page_size}. ArcGIS accepts values from 1 through 2000.")
+            raise FoodSafetyError(
+                f"Invalid page size {page_size}. ArcGIS accepts values from 1 through 2000."
+            )
 
         features: list[Feature[Self]] = []
         offset = query.offset or 0
         while True:
-            page = self.query(replace(query, limit=page_size, offset=offset), record_type)
+            page = self.query(
+                replace(query, limit=page_size, offset=offset), record_type
+            )
             features.extend(page)
             if len(page) < page_size:
                 return features

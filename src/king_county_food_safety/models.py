@@ -192,10 +192,14 @@ class FacilityRecord:
         return cls(
             business_address=attributes.get("Business_Address"),
             business_city=attributes.get("Business_City"),
-            business_establishment_description=attributes.get("Business_Establishment_Descr"),
+            business_establishment_description=attributes.get(
+                "Business_Establishment_Descr"
+            ),
             business_grade=attributes.get("Business_Grade"),
             business_latitude=_optional_float(attributes.get("Business_Location_Lat")),
-            business_longitude=_optional_float(attributes.get("Businesss_Location_Long")),
+            business_longitude=_optional_float(
+                attributes.get("Businesss_Location_Long")
+            ),
             business_name=attributes.get("Business_Name"),
             business_phone=attributes.get("Business_Phone"),
             business_program_identifier=attributes.get("Business_Program_Identifier"),
@@ -283,7 +287,9 @@ class RatingSummary:
     def from_arcgis(cls, attributes: dict[str, Any]) -> RatingSummary:
         """Create a rating summary from ArcGIS attributes."""
 
-        return cls(count=int(attributes["count"]), rating=attributes.get("Business_Grade"))
+        return cls(
+            count=int(attributes["count"]), rating=attributes.get("Business_Grade")
+        )
 
 
 @dataclass(frozen=True, slots=True)
@@ -325,7 +331,9 @@ class LayerInfo:
 
         return cls(
             display_field=attributes.get("displayField"),
-            fields=[FieldInfo.from_arcgis(field) for field in attributes.get("fields", [])],
+            fields=[
+                FieldInfo.from_arcgis(field) for field in attributes.get("fields", [])
+            ],
             geometry_type=attributes.get("geometryType"),
             global_id_field=attributes.get("globalIdField"),
             max_record_count=_optional_int(attributes.get("maxRecordCount")),
@@ -372,7 +380,9 @@ class GeocodeCandidate:
         raw_attributes = attributes.get("attributes")
         return cls(
             address=attributes["address"],
-            attributes=GeocodeCandidateAttributes.from_arcgis(raw_attributes) if raw_attributes else None,
+            attributes=GeocodeCandidateAttributes.from_arcgis(raw_attributes)
+            if raw_attributes
+            else None,
             location=Geometry(x=float(raw_location["x"]), y=float(raw_location["y"])),
             score=float(attributes["score"]),
         )
@@ -419,10 +429,9 @@ def miles_between(first: Geometry, second: Geometry) -> float:
     first_latitude = _degrees_to_radians(first.y)
     second_latitude = _degrees_to_radians(second.y)
 
-    a = (
-        sin(latitude_delta / 2) * sin(latitude_delta / 2)
-        + sin(longitude_delta / 2) * sin(longitude_delta / 2) * cos(first_latitude) * cos(second_latitude)
-    )
+    a = sin(latitude_delta / 2) * sin(latitude_delta / 2) + sin(
+        longitude_delta / 2
+    ) * sin(longitude_delta / 2) * cos(first_latitude) * cos(second_latitude)
     c = 2 * atan2(sqrt(a), sqrt(1 - a))
     return earth_radius_miles * c
 

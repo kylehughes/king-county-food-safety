@@ -7,11 +7,13 @@ on:
 
 permissions:
   contents: write
+  id-token: write
 
 jobs:
   release:
-    name: Publish GitHub release
+    name: Publish release
     runs-on: ubuntu-latest
+    environment: pypi
     steps:
       - uses: actions/checkout@v5
 
@@ -28,8 +30,8 @@ jobs:
             exit 1
           fi
 
-      - name: Install package and coverage
-        run: python -m pip install . coverage
+      - name: Install package and dev dependencies
+        run: python -m pip install ".[dev]"
 
       - name: Run tests with coverage
         run: |
@@ -37,9 +39,10 @@ jobs:
           coverage report --fail-under=100
 
       - name: Build distributions
-        run: |
-          python -m pip install build
-          python -m build
+        run: python -m build
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
 
       - name: Create GitHub release
         env:

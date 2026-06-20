@@ -1,20 +1,59 @@
 [build-system]
-requires = ["setuptools>=70"]
+requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "king-county-food-safety-ratings-cli"
-version = "0.1.0"
+version = "1.0.0"
 description = "CLI for King County food safety ratings, inspections, violations, geocoding, and ArcGIS queries."
 readme = "README.md"
 requires-python = ">=3.12"
+license = "MIT"
+license-files = ["LICENSE"]
 authors = [
     { name = "Kyle Hughes" }
 ]
+keywords = [
+    "king-county",
+    "food-safety",
+    "restaurant-inspections",
+    "arcgis",
+    "cli",
+    "public-health",
+]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Intended Audience :: End Users/Desktop",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Utilities",
+]
 dependencies = []
+
+[project.urls]
+Homepage = "https://github.com/kylehughes/king-county-food-safety-ratings-cli"
+Repository = "https://github.com/kylehughes/king-county-food-safety-ratings-cli"
+Issues = "https://github.com/kylehughes/king-county-food-safety-ratings-cli/issues"
+
+[project.optional-dependencies]
+dev = [
+    "build",
+    "coverage",
+    "mypy",
+    "ruff",
+]
 
 [project.scripts]
 king-county-food-safety = "king_county_food_safety.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.ruff]
+target-version = "py312"
+src = ["src", "tests"]

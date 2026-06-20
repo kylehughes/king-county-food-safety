@@ -54,7 +54,9 @@ class ModelTests(unittest.TestCase):
         self.assertEqual(record.display_rating, "Excellent")
         self.assertEqual(record.city_state_zip, "SEATTLE, WA 98105")
 
-    def test_facility_city_state_zip_handles_missing_parts_and_numeric_values(self) -> None:
+    def test_facility_city_state_zip_handles_missing_parts_and_numeric_values(
+        self,
+    ) -> None:
         payload = {
             "OBJECTID": 1,
             "Business_Record_ID": "PFE-1",
@@ -141,13 +143,22 @@ class ModelTests(unittest.TestCase):
         self.assertEqual(violation.violation_points, 10)
 
     def test_rating_aliases_resolve(self) -> None:
-        self.assertIs(FoodSafetyRating.from_cli("excellent"), FoodSafetyRating.EXCELLENT)
-        self.assertIs(FoodSafetyRating.from_cli("needs improvement"), FoodSafetyRating.NEEDS_TO_IMPROVE)
-        self.assertIs(FoodSafetyRating.from_cli("not-available"), FoodSafetyRating.NOT_AVAILABLE)
+        self.assertIs(
+            FoodSafetyRating.from_cli("excellent"), FoodSafetyRating.EXCELLENT
+        )
+        self.assertIs(
+            FoodSafetyRating.from_cli("needs improvement"),
+            FoodSafetyRating.NEEDS_TO_IMPROVE,
+        )
+        self.assertIs(
+            FoodSafetyRating.from_cli("not-available"), FoodSafetyRating.NOT_AVAILABLE
+        )
         self.assertIs(FoodSafetyRating.from_cli("ok"), FoodSafetyRating.OKAY)
 
     def test_layer_and_rating_errors_and_properties(self) -> None:
-        self.assertIs(FoodSafetyLayer.from_cli("restaurants"), FoodSafetyLayer.FACILITIES)
+        self.assertIs(
+            FoodSafetyLayer.from_cli("restaurants"), FoodSafetyLayer.FACILITIES
+        )
         self.assertEqual(FoodSafetyLayer.INSPECTIONS.display_name, "Inspections")
         self.assertIn("/1", FoodSafetyLayer.INSPECTIONS.url)
         self.assertEqual(FoodSafetyLayer.SEARCH.display_name, "Search view")
@@ -157,8 +168,12 @@ class ModelTests(unittest.TestCase):
         with self.assertRaises(FoodSafetyError):
             FoodSafetyLayer.from_cli("unknown")
 
-        self.assertEqual(FoodSafetyRating.NOT_AVAILABLE.display_name, "Rating not available")
-        self.assertIn("Business_Grade IS NULL", FoodSafetyRating.NOT_AVAILABLE.where_clause)
+        self.assertEqual(
+            FoodSafetyRating.NOT_AVAILABLE.display_name, "Rating not available"
+        )
+        self.assertIn(
+            "Business_Grade IS NULL", FoodSafetyRating.NOT_AVAILABLE.where_clause
+        )
         with self.assertRaises(FoodSafetyError):
             FoodSafetyRating.from_cli("bad")
 
@@ -167,7 +182,9 @@ class ModelTests(unittest.TestCase):
         self.assertEqual(summary.display_rating, "Rating not available")
         self.assertEqual(summary.count, 4)
 
-        field = FieldInfo.from_arcgis({"name": "Business_Name", "type": "esriFieldTypeString", "length": "100"})
+        field = FieldInfo.from_arcgis(
+            {"name": "Business_Name", "type": "esriFieldTypeString", "length": "100"}
+        )
         self.assertEqual(field.length, 100)
 
         info = LayerInfo.from_arcgis(
@@ -185,7 +202,10 @@ class ModelTests(unittest.TestCase):
         self.assertEqual(info.fields[0].name, "OBJECTID")
 
         self.assertIsNone(geometry_from_arcgis(None))
-        self.assertEqual(geometry_from_arcgis({"x": "-122.3", "y": "47.6"}), Geometry(x=-122.3, y=47.6))
+        self.assertEqual(
+            geometry_from_arcgis({"x": "-122.3", "y": "47.6"}),
+            Geometry(x=-122.3, y=47.6),
+        )
 
 
 if __name__ == "__main__":

@@ -16,11 +16,9 @@ from king_county_food_safety.models import (
     FacilityRecord,
     Feature,
     FieldInfo,
-    FoodSafetyLayer,
     GeocodeCandidate,
     Geometry,
     InspectionRecord,
-    InspectionWithViolations,
     LayerInfo,
     RatingSummary,
     ViolationRecord,
@@ -39,7 +37,9 @@ class FakeRawClient:
         self.calls.append(("query", query))
         return self.payload
 
-    def query_all_payload(self, query: object, *, page_size: int = 2000, record_limit: int | None = None) -> dict:
+    def query_all_payload(
+        self, query: object, *, page_size: int = 2000, record_limit: int | None = None
+    ) -> dict:
         self.calls.append(("query_all", query, page_size, record_limit))
         return self.payload
 
@@ -54,7 +54,9 @@ class FakeAPI:
         self.calls.append(("count", args, kwargs))
         return 3
 
-    def facilities_for_ids(self, *args: object, **kwargs: object) -> list[Feature[FacilityRecord]]:
+    def facilities_for_ids(
+        self, *args: object, **kwargs: object
+    ) -> list[Feature[FacilityRecord]]:
         self.calls.append(("facilities_for_ids", args, kwargs))
         return [_facility("PFE-1"), _facility("PFE-2", object_id=2)]
 
@@ -66,11 +68,15 @@ class FakeAPI:
         self.calls.append(("geocode", args, kwargs))
         return self.geocode_candidates
 
-    def inspections(self, *args: object, **kwargs: object) -> list[Feature[InspectionRecord]]:
+    def inspections(
+        self, *args: object, **kwargs: object
+    ) -> list[Feature[InspectionRecord]]:
         self.calls.append(("inspections", args, kwargs))
         return [_inspection("PFE-1")]
 
-    def inspections_for_facility_ids(self, *args: object, **kwargs: object) -> list[Feature[InspectionRecord]]:
+    def inspections_for_facility_ids(
+        self, *args: object, **kwargs: object
+    ) -> list[Feature[InspectionRecord]]:
         self.calls.append(("inspections_for_facility_ids", args, kwargs))
         return [_inspection("PFE-1"), _inspection("PFE-2", serial="S2")]
 
@@ -78,7 +84,14 @@ class FakeAPI:
         self.calls.append(("layer_info", args, kwargs))
         return LayerInfo(
             display_field="Business_Name",
-            fields=[FieldInfo(alias="OBJECTID", length=None, name="OBJECTID", type="esriFieldTypeOID")],
+            fields=[
+                FieldInfo(
+                    alias="OBJECTID",
+                    length=None,
+                    name="OBJECTID",
+                    type="esriFieldTypeOID",
+                )
+            ],
             geometry_type="esriGeometryPoint",
             global_id_field=None,
             max_record_count=2000,
@@ -86,23 +99,36 @@ class FakeAPI:
             object_id_field="OBJECTID",
         )
 
-    def nearby_facilities(self, *args: object, **kwargs: object) -> list[Feature[FacilityRecord]]:
+    def nearby_facilities(
+        self, *args: object, **kwargs: object
+    ) -> list[Feature[FacilityRecord]]:
         self.calls.append(("nearby_facilities", args, kwargs))
-        return [_facility("PFE-1", x=-122.3, y=47.6), _facility("PFE-2", object_id=2, x=-122.31, y=47.61)]
+        return [
+            _facility("PFE-1", x=-122.3, y=47.6),
+            _facility("PFE-2", object_id=2, x=-122.31, y=47.61),
+        ]
 
-    def rating_summary(self, *args: object, **kwargs: object) -> list[Feature[RatingSummary]]:
+    def rating_summary(
+        self, *args: object, **kwargs: object
+    ) -> list[Feature[RatingSummary]]:
         self.calls.append(("rating_summary", args, kwargs))
         return [Feature(RatingSummary(count=2, rating="Good"))]
 
-    def search_facilities(self, *args: object, **kwargs: object) -> list[Feature[FacilityRecord]]:
+    def search_facilities(
+        self, *args: object, **kwargs: object
+    ) -> list[Feature[FacilityRecord]]:
         self.calls.append(("search_facilities", args, kwargs))
         return [_facility("PFE-1")]
 
-    def violations(self, *args: object, **kwargs: object) -> list[Feature[ViolationRecord]]:
+    def violations(
+        self, *args: object, **kwargs: object
+    ) -> list[Feature[ViolationRecord]]:
         self.calls.append(("violations", args, kwargs))
         return [_violation("S1")]
 
-    def violations_for_inspection_serial_numbers(self, *args: object, **kwargs: object) -> list[Feature[ViolationRecord]]:
+    def violations_for_inspection_serial_numbers(
+        self, *args: object, **kwargs: object
+    ) -> list[Feature[ViolationRecord]]:
         self.calls.append(("violations_for_inspection_serial_numbers", args, kwargs))
         return [_violation("S1"), _violation("S2")]
 
@@ -115,7 +141,9 @@ class FailingSearchAPI:
 class CLITests(unittest.TestCase):
     def test_root_network_options_configure_client(self) -> None:
         api = FakeAPI()
-        with patch("king_county_food_safety.cli.FoodSafetyAPI", return_value=api) as api_factory:
+        with patch(
+            "king_county_food_safety.cli.FoodSafetyAPI", return_value=api
+        ) as api_factory:
             with contextlib.redirect_stdout(io.StringIO()):
                 cli.main(["--timeout", "1.5", "--retries", "2", "metadata"])
 
@@ -126,16 +154,22 @@ class CLITests(unittest.TestCase):
     def test_food_safety_errors_exit_with_concise_message(self) -> None:
         stderr = io.StringIO()
 
-        with patch("king_county_food_safety.cli.FoodSafetyAPI", return_value=FailingSearchAPI()):
+        with patch(
+            "king_county_food_safety.cli.FoodSafetyAPI", return_value=FailingSearchAPI()
+        ):
             with contextlib.redirect_stderr(stderr):
                 with self.assertRaises(SystemExit) as exit_error:
                     cli.main(["search", "pizza"])
 
         self.assertEqual(exit_error.exception.code, 1)
-        self.assertEqual(stderr.getvalue(), "Network request failed for https://example.test/query\n")
+        self.assertEqual(
+            stderr.getvalue(), "Network request failed for https://example.test/query\n"
+        )
         self.assertNotIn("Traceback", stderr.getvalue())
 
-        with patch("king_county_food_safety.cli.FoodSafetyAPI", return_value=FailingSearchAPI()):
+        with patch(
+            "king_county_food_safety.cli.FoodSafetyAPI", return_value=FailingSearchAPI()
+        ):
             with self.assertRaises(FoodSafetyError):
                 cli.main(["--verbose", "search", "pizza"])
 
@@ -143,7 +177,10 @@ class CLITests(unittest.TestCase):
         api = FakeAPI()
 
         self.assertEqual(_run(["count", "facilities"], api).stdout, "3\n")
-        self.assertEqual(json.loads(_run(["count", "facilities", "--json"], api).stdout)[0]["count"], 3)
+        self.assertEqual(
+            json.loads(_run(["count", "facilities", "--json"], api).stdout)[0]["count"],
+            3,
+        )
         search = _run(
             [
                 "search",
@@ -167,12 +204,17 @@ class CLITests(unittest.TestCase):
         self.assertEqual(json.loads(search.stdout)[0]["business_record_id"], "PFE-1")
         self.assertEqual(api.calls[-1][2]["updated_since"], date(2026, 1, 1))
 
-        facility = _run(["facility", "PFE-1", "--with-inspections", "--with-violations", "--json"], api)
+        facility = _run(
+            ["facility", "PFE-1", "--with-inspections", "--with-violations", "--json"],
+            api,
+        )
         self.assertEqual(json.loads(facility.stdout)[0]["business_name"], "Alpha")
         table_facility = _run(["facility", "PFE-1", "--with-inspections"], api)
         self.assertIn("Business Record ID", table_facility.stdout)
 
-        geocode = _run(["geocode", "111 NE 45TH ST", "--city", "Seattle", "--jsonl"], api)
+        geocode = _run(
+            ["geocode", "111 NE 45TH ST", "--city", "Seattle", "--jsonl"], api
+        )
         self.assertEqual(json.loads(geocode.stdout)["score"], 100)
 
     def test_facility_and_inspection_watchlist_files(self) -> None:
@@ -210,7 +252,9 @@ class CLITests(unittest.TestCase):
             self.assertEqual(api.calls[-2][0], "inspections_for_facility_ids")
 
             single = _run(["inspections", "PFE-1", "--json"], api)
-            self.assertEqual(json.loads(single.stdout)[0]["inspection_serial_number"], "S1")
+            self.assertEqual(
+                json.loads(single.stdout)[0]["inspection_serial_number"], "S1"
+            )
 
             stdin = io.StringIO("PFE-1\nPFE-2\n")
             with patch("sys.stdin", stdin):
@@ -247,9 +291,25 @@ class CLITests(unittest.TestCase):
         ratings = _run(["ratings", "--include-inactive", "--json"], api)
         self.assertEqual(json.loads(ratings.stdout)[0]["rating"], "Good")
 
-        near = _run(["near", "--lat", "47.6", "--lon", "-122.3", "--radius", "1", "--limit", "1", "--json"], api)
+        near = _run(
+            [
+                "near",
+                "--lat",
+                "47.6",
+                "--lon",
+                "-122.3",
+                "--radius",
+                "1",
+                "--limit",
+                "1",
+                "--json",
+            ],
+            api,
+        )
         self.assertEqual(len(json.loads(near.stdout)), 1)
-        near_address = _run(["near", "111 NE 45TH ST", "--city", "Seattle", "--json"], api)
+        near_address = _run(
+            ["near", "111 NE 45TH ST", "--city", "Seattle", "--json"], api
+        )
         self.assertGreaterEqual(len(json.loads(near_address.stdout)), 1)
 
         with self.assertRaises(SystemExit):
@@ -298,11 +358,16 @@ class CLITests(unittest.TestCase):
                 api,
             )
             self.assertEqual(json.loads(query.stdout), {"Name": "Alpha", "OBJECTID": 1})
-            self.assertEqual(json.loads(manifest.read_text(encoding="utf-8"))["command"], "query")
+            self.assertEqual(
+                json.loads(manifest.read_text(encoding="utf-8"))["command"], "query"
+            )
 
             raw = _run(["query", "facilities"], api)
             self.assertIn('"features"', raw.stdout)
-            spatial = _run(["query", "facilities", "--lat", "47.6", "--lon", "-122.3", "--jsonl"], api)
+            spatial = _run(
+                ["query", "facilities", "--lat", "47.6", "--lon", "-122.3", "--jsonl"],
+                api,
+            )
             self.assertEqual(json.loads(spatial.stdout)["OBJECTID"], 1)
 
             aggregate = _run(
@@ -322,13 +387,22 @@ class CLITests(unittest.TestCase):
             self.assertEqual(aggregate.stdout, "OBJECTID,Name\n1,Alpha\n")
 
             large_export_api = FakeAPI()
-            large_export = _run(["export", "facilities", "--jsonl", "--limit", "5000"], large_export_api)
-            self.assertEqual(json.loads(large_export.stdout), {"Name": "Alpha", "OBJECTID": 1})
+            large_export = _run(
+                ["export", "facilities", "--jsonl", "--limit", "5000"], large_export_api
+            )
+            self.assertEqual(
+                json.loads(large_export.stdout), {"Name": "Alpha", "OBJECTID": 1}
+            )
             self.assertEqual(large_export_api.client.calls[-1][3], 5000)
 
             empty_export_api = FakeAPI(
                 raw_payload={
-                    "fields": ["ignored", {"name": None}, {"name": "OBJECTID"}, {"name": "Name"}],
+                    "fields": [
+                        "ignored",
+                        {"name": None},
+                        {"name": "OBJECTID"},
+                        {"name": "Name"},
+                    ],
                     "features": [],
                 }
             )
@@ -344,7 +418,9 @@ class CLITests(unittest.TestCase):
             )
             self.assertEqual(empty_export.stdout, "OBJECTID,Name\n")
             self.assertEqual(
-                cli._record_fields([{"dynamic": "value"}], {"fields": [{"name": "OBJECTID"}]}),
+                cli._record_fields(
+                    [{"dynamic": "value"}], {"fields": [{"name": "OBJECTID"}]}
+                ),
                 ["OBJECTID", "dynamic"],
             )
 
@@ -356,13 +432,22 @@ class CLITests(unittest.TestCase):
             self.assertEqual(json.loads(stdout_snapshot.stdout)["OBJECTID"], 1)
 
             large_snapshot_api = FakeAPI()
-            _run(["snapshot", "facilities", "--output", "-", "--limit", "5000"], large_snapshot_api)
+            _run(
+                ["snapshot", "facilities", "--output", "-", "--limit", "5000"],
+                large_snapshot_api,
+            )
             self.assertEqual(large_snapshot_api.client.calls[-1][3], 5000)
 
             old_snapshot = Path(directory) / "old.jsonl"
             new_snapshot = Path(directory) / "new.jsonl"
-            old_snapshot.write_text('{"OBJECTID": 1, "Name": "Alpha"}\n{"OBJECTID": 2, "Name": "Beta"}\n', encoding="utf-8")
-            new_snapshot.write_text('{"OBJECTID": 1, "Name": "Alpha Prime"}\n{"OBJECTID": 3, "Name": "Gamma"}\n', encoding="utf-8")
+            old_snapshot.write_text(
+                '{"OBJECTID": 1, "Name": "Alpha"}\n{"OBJECTID": 2, "Name": "Beta"}\n',
+                encoding="utf-8",
+            )
+            new_snapshot.write_text(
+                '{"OBJECTID": 1, "Name": "Alpha Prime"}\n{"OBJECTID": 3, "Name": "Gamma"}\n',
+                encoding="utf-8",
+            )
             diff = _run(["diff", str(old_snapshot), str(new_snapshot), "--json"], api)
             changes = {record["change"] for record in json.loads(diff.stdout)}
             self.assertEqual(changes, {"added", "changed", "removed"})
@@ -387,7 +472,10 @@ class CLITests(unittest.TestCase):
         with self.assertRaises(SystemExit):
             _run(["query", "facilities", "--limit", "5000"], api)
         query_all_api = FakeAPI()
-        _run(["query", "facilities", "--all", "--jsonl", "--limit", "5000"], query_all_api)
+        _run(
+            ["query", "facilities", "--all", "--jsonl", "--limit", "5000"],
+            query_all_api,
+        )
         self.assertEqual(query_all_api.client.calls[-1][3], 5000)
         with self.assertRaises(SystemExit):
             _run(["export", "facilities", "--limit", "0"], api)
@@ -404,7 +492,12 @@ class CLITests(unittest.TestCase):
             with patch("sys.argv", ["king-county-food-safety", "metadata"]):
                 with contextlib.redirect_stdout(stdout):
                     with self.assertRaises(SystemExit) as exit_error:
-                        runpy.run_path(str(project_root / "src/king_county_food_safety/__main__.py"), run_name="__main__")
+                        runpy.run_path(
+                            str(
+                                project_root / "src/king_county_food_safety/__main__.py"
+                            ),
+                            run_name="__main__",
+                        )
         self.assertEqual(exit_error.exception.code, 0)
         self.assertIn("facilities", stdout.getvalue())
 
@@ -413,7 +506,10 @@ class CLITests(unittest.TestCase):
             with patch("sys.argv", ["king-county-food-safety", "metadata"]):
                 with contextlib.redirect_stdout(stdout):
                     with self.assertRaises(SystemExit) as exit_error:
-                        runpy.run_path(str(project_root / "src/king_county_food_safety/cli.py"), run_name="__main__")
+                        runpy.run_path(
+                            str(project_root / "src/king_county_food_safety/cli.py"),
+                            run_name="__main__",
+                        )
         self.assertEqual(exit_error.exception.code, 0)
 
 
@@ -448,7 +544,9 @@ def _candidate() -> GeocodeCandidate:
     )
 
 
-def _facility(business_record_id: str, *, object_id: int = 1, x: float = -122.3, y: float = 47.6) -> Feature[FacilityRecord]:
+def _facility(
+    business_record_id: str, *, object_id: int = 1, x: float = -122.3, y: float = 47.6
+) -> Feature[FacilityRecord]:
     return Feature(
         FacilityRecord(
             business_address="111 NE 45TH ST",
@@ -473,7 +571,9 @@ def _facility(business_record_id: str, *, object_id: int = 1, x: float = -122.3,
     )
 
 
-def _inspection(business_record_id: str, *, serial: str = "S1") -> Feature[InspectionRecord]:
+def _inspection(
+    business_record_id: str, *, serial: str = "S1"
+) -> Feature[InspectionRecord]:
     return Feature(
         InspectionRecord(
             business_record_id=business_record_id,

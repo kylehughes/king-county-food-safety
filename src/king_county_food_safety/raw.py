@@ -55,7 +55,11 @@ def read_records(path: str) -> list[dict[str, Any]]:
     if stripped.startswith("["):
         value = json.loads(text)
         return [_ensure_record(item, path) for item in value]
-    return [_ensure_record(json.loads(line), path) for line in text.splitlines() if line.strip()]
+    return [
+        _ensure_record(json.loads(line), path)
+        for line in text.splitlines()
+        if line.strip()
+    ]
 
 
 def diff_records(
@@ -74,15 +78,43 @@ def diff_records(
     records: list[dict[str, Any]] = []
 
     for key in sorted(old_by_key.keys() - new_by_key.keys()):
-        records.append({"change": "removed", "key": key, "old": old_by_key[key], "new": None, "changed_fields": []})
+        records.append(
+            {
+                "change": "removed",
+                "key": key,
+                "old": old_by_key[key],
+                "new": None,
+                "changed_fields": [],
+            }
+        )
     for key in sorted(new_by_key.keys() - old_by_key.keys()):
-        records.append({"change": "added", "key": key, "old": None, "new": new_by_key[key], "changed_fields": []})
+        records.append(
+            {
+                "change": "added",
+                "key": key,
+                "old": None,
+                "new": new_by_key[key],
+                "changed_fields": [],
+            }
+        )
     for key in sorted(old_by_key.keys() & new_by_key.keys()):
         old = old_by_key[key]
         new = new_by_key[key]
-        changed_fields = sorted(field for field in old.keys() | new.keys() if old.get(field) != new.get(field))
+        changed_fields = sorted(
+            field
+            for field in old.keys() | new.keys()
+            if old.get(field) != new.get(field)
+        )
         if changed_fields:
-            records.append({"change": "changed", "key": key, "old": old, "new": new, "changed_fields": changed_fields})
+            records.append(
+                {
+                    "change": "changed",
+                    "key": key,
+                    "old": old,
+                    "new": new,
+                    "changed_fields": changed_fields,
+                }
+            )
     return records
 
 
@@ -110,7 +142,10 @@ def default_key_field(records: Iterable[dict[str, Any]]) -> str:
         "Inspection_Serial_Num",
     ]
     for candidate in candidates:
-        if any(candidate in record and record[candidate] not in (None, "") for record in records):
+        if any(
+            candidate in record and record[candidate] not in (None, "")
+            for record in records
+        ):
             return candidate
     raise FoodSafetyError("Could not infer a snapshot key. Use --key.")
 
@@ -121,16 +156,22 @@ def _ensure_record(value: Any, path: str) -> dict[str, Any]:
     return value
 
 
-def _record_map(records: Iterable[dict[str, Any]], key_field: str) -> dict[str, dict[str, Any]]:
+def _record_map(
+    records: Iterable[dict[str, Any]], key_field: str
+) -> dict[str, dict[str, Any]]:
     records = list(records)
     mapped: dict[str, dict[str, Any]] = {}
     for record in records:
         try:
             key = record[key_field]
         except KeyError as error:
-            raise FoodSafetyError(f"Record is missing key field '{key_field}'.") from error
+            raise FoodSafetyError(
+                f"Record is missing key field '{key_field}'."
+            ) from error
         key_text = str(key)
         if key_text in mapped:
-            raise FoodSafetyError(f"Duplicate key '{key_text}' for field '{key_field}'.")
+            raise FoodSafetyError(
+                f"Duplicate key '{key_text}' for field '{key_field}'."
+            )
         mapped[key_text] = record
     return mapped

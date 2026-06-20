@@ -8,25 +8,40 @@ The command is `king-county-food-safety`. It reads King County's public ArcGIS s
 
 Use Python 3.12 or newer.
 
+### Install
+
+Install from PyPI with the tool of your choice:
+
+```sh
+uv tool install king-county-food-safety-ratings-cli
+```
+
+```sh
+pipx install king-county-food-safety-ratings-cli
+```
+
+```sh
+pip install king-county-food-safety-ratings-cli
+```
+
+Any of these puts the `king-county-food-safety` command on your path.
+
 ### Run the Command
 
-Run from the repository without installing:
+```sh
+king-county-food-safety ratings
+```
+
+Run from a checkout without installing:
 
 ```sh
 PYTHONPATH=src python3 -m king_county_food_safety ratings
 ```
 
-Run the packaged console script through `uv`:
+Run the packaged console script through `uv` in a checkout:
 
 ```sh
 uv run king-county-food-safety ratings
-```
-
-Install the command into an active virtual environment:
-
-```sh
-uv pip install -e .
-king-county-food-safety ratings
 ```
 
 Network options are root-level flags. Put them before the subcommand:
@@ -235,6 +250,12 @@ Use `king-county-food-safety metadata <layer>` to inspect the current schema. Us
 
 The CLI does not cache responses. Every command reads current data from the public service.
 
+### Stability and Versioning
+
+This project follows [semantic versioning](https://semver.org). The public contract is the command-line interface: command and alias names, flags, output formats, exit codes, and the deterministic, sorted JSON shape. Breaking any of these requires a major version bump.
+
+The data itself is owned by King County. Field names and public filtering rules can change when the county updates its map, and those upstream changes are not treated as breaking changes to this CLI. Use `metadata <layer>` to inspect the current schema and `query` for shapes the typed commands do not cover.
+
 ## Development
 
 ### Run Tests
@@ -250,3 +271,23 @@ uv run --no-project --with coverage env PYTHONPATH=src \
   coverage run --source=src/king_county_food_safety -m unittest discover -s tests
 uv run --no-project --with coverage coverage report --fail-under=100
 ```
+
+### Lint and Format
+
+```sh
+uv run --no-project --with ruff ruff check .
+uv run --no-project --with ruff ruff format .
+```
+
+The `dev` extra (`pip install ".[dev]"`) installs the full tooling set: `build`, `coverage`, `mypy`, and `ruff`.
+
+### Releasing
+
+Releases are automated through GitHub Actions. Bump `version` in `pyproject.toml`, commit, then push a matching tag:
+
+```sh
+git tag v1.2.3
+git push origin v1.2.3
+```
+
+The release workflow verifies the tag matches the package version, runs the coverage gate, builds distributions, publishes to PyPI via trusted publishing, and creates the GitHub release.

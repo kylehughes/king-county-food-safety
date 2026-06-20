@@ -20,10 +20,15 @@ class FeatureQueryTests(unittest.TestCase):
             order_by_fields=("Business_Name ASC",),
             limit=50,
             offset=10,
-            spatial_filter=SpatialFilter(latitude=47.661115, longitude=-122.327789, radius_miles=0.25),
+            spatial_filter=SpatialFilter(
+                latitude=47.661115, longitude=-122.327789, radius_miles=0.25
+            ),
         )
 
-        params = {key: values[0] for key, values in parse_qs(urlparse(query.url()).query).items()}
+        params = {
+            key: values[0]
+            for key, values in parse_qs(urlparse(query.url()).query).items()
+        }
         self.assertEqual(params["where"], "Business_Status = 'Active'")
         self.assertEqual(params["outFields"], "Business_Name,Business_Grade")
         self.assertEqual(params["returnGeometry"], "true")
@@ -43,7 +48,10 @@ class FeatureQueryTests(unittest.TestCase):
             return_ids_only=True,
         )
 
-        params = {key: values[0] for key, values in parse_qs(urlparse(query.url()).query).items()}
+        params = {
+            key: values[0]
+            for key, values in parse_qs(urlparse(query.url()).query).items()
+        }
         self.assertEqual(params["groupByFieldsForStatistics"], "Business_City")
         self.assertEqual(params["outStatistics"], '[{"statisticType":"count"}]')
         self.assertEqual(params["returnCountOnly"], "true")

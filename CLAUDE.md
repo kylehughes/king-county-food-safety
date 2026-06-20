@@ -19,12 +19,18 @@ uv run --no-project --with coverage env PYTHONPATH=src \
   coverage run --source=src/king_county_food_safety -m unittest discover -s tests
 uv run --no-project --with coverage coverage report --fail-under=100
 
+# Lint and format (ruff; CI gates `ruff check` + `ruff format --check`)
+uv run --no-project --with ruff ruff check .
+uv run --no-project --with ruff ruff format .
+
 # Run the CLI (any of these)
 PYTHONPATH=src python3 -m king_county_food_safety ratings
 uv run king-county-food-safety ratings
 ```
 
-There is no linter, formatter, type checker, or CI configured. Coverage is enforced at 100% — new code needs corresponding tests or coverage fails.
+Quality gates (enforced in CI on push to `main` and PRs): `ruff` lint + format, and 100% coverage — new code needs corresponding tests or coverage fails. `mypy --strict` is **not** yet clean (generics in `arcgis.py` need a `SupportsFromArcGIS` protocol + `TypeVar`); it is a known follow-up, not a gate. The `dev` extra (`pip install ".[dev]"`) installs `build`, `coverage`, `mypy`, `ruff`.
+
+**Releasing:** bump `version` in `pyproject.toml`, commit, then push a matching `vX.Y.Z` tag. `release.yml` verifies tag == version, runs the coverage gate, builds, publishes to PyPI (trusted publishing, `pypi` environment), and creates the GitHub release. Follows semver — the CLI contract (commands, flags, output formats, exit codes, sorted JSON) is stable across minor/patch.
 
 ## Architecture
 
