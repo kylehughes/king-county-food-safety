@@ -283,7 +283,7 @@ uv run --no-project --with ruff ruff check .
 uv run --no-project --with ruff ruff format .
 ```
 
-The `dev` extra (`pip install ".[dev]"`) installs the full tooling set: `build`, `coverage`, `mypy`, and `ruff`.
+The `dev` extra (`pip install ".[dev]"`) installs `build`, `coverage`, `mypy`, and `ruff`.
 
 ### Releasing
 
