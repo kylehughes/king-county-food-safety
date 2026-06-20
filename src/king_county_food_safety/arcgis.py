@@ -4,13 +4,14 @@ from __future__ import annotations
 
 from dataclasses import dataclass, replace
 from json import JSONDecodeError, loads
+from socket import timeout as SocketTimeout
 from typing import Any, Self
-from urllib.error import HTTPError
+from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
 from king_county_food_safety import constants
-from king_county_food_safety.errors import ArcGISError, FoodSafetyError, HTTPStatusError
+from king_county_food_safety.errors import ArcGISError, FoodSafetyError, HTTPStatusError, NetworkError
 from king_county_food_safety.models import (
     Feature,
     FoodSafetyLayer,
@@ -100,7 +101,12 @@ class FeatureQuery:
 class ArcGISClient:
     """Fetches and decodes ArcGIS REST responses."""
 
-    def __init__(self, timeout: float = 30) -> None:
+    def __init__(self, timeout: float = 30, retries: int = 0) -> None:
+        if retries < 0:
+            raise FoodSafetyError("Retries must be zero or greater.")
+        if timeout <= 0:
+            raise FoodSafetyError("Timeout must be greater than zero.")
+        self.retries = retries
         self.timeout = timeout
 
     def count(self, query: FeatureQuery) -> int:
@@ -161,14 +167,23 @@ class ArcGISClient:
         """Fetch raw bytes from a URL."""
 
         request = Request(url, headers={"User-Agent": "king-county-food-safety/0.1"})
-        try:
-            with urlopen(request, timeout=self.timeout) as response:
-                status = getattr(response, "status", 200)
-                if not 200 <= status <= 299:
-                    raise HTTPStatusError(status, url)
-                return response.read()
-        except HTTPError as error:
-            raise HTTPStatusError(error.code, url) from error
+        attempts = self.retries + 1
+        for attempt in range(attempts):
+            try:
+                with urlopen(request, timeout=self.timeout) as response:
+                    status = getattr(response, "status", 200)
+                    if not 200 <= status <= 299:
+                        raise HTTPStatusError(status, url)
+                    return response.read()
+            except HTTPError as error:
+                raise HTTPStatusError(error.code, url) from error
+            except URLError as error:
+                if attempt == attempts - 1:
+                    raise NetworkError(url, error.reason) from error
+            except (OSError, SocketTimeout, TimeoutError) as error:
+                if attempt == attempts - 1:
+                    raise NetworkError(url, error) from error
+        raise NetworkError(url, "request failed")  # pragma: no cover
 
     def layer_info(self, layer: FoodSafetyLayer) -> LayerInfo:
         """Fetch ArcGIS layer metadata."""
@@ -179,7 +194,7 @@ class ArcGISClient:
     def query(self, query: FeatureQuery, record_type: type[Self]) -> list[Feature[Self]]:
         """Execute and decode an ArcGIS feature query."""
 
-        payload = self.get_json(query.url())
+        payload = self.query_payload(query)
         features: list[Feature[Self]] = []
         for feature in payload.get("features", []):
             features.append(
@@ -189,6 +204,48 @@ class ArcGISClient:
                 )
             )
         return features
+
+    def query_payload(self, query: FeatureQuery) -> dict[str, Any]:
+        """Execute a feature query and return the raw ArcGIS JSON payload."""
+
+        return self.get_json(query.url())
+
+    def query_all_payload(
+        self,
+        query: FeatureQuery,
+        *,
+        page_size: int = 2000,
+        record_limit: int | None = None,
+    ) -> dict[str, Any]:
+        """Execute a feature query until all pages, or an optional cap, have been fetched."""
+
+        if query.return_count_only or query.return_ids_only:
+            return self.query_payload(query)
+        if not 1 <= page_size <= 2000:
+            raise FoodSafetyError(f"Invalid page size {page_size}. ArcGIS accepts values from 1 through 2000.")
+        if record_limit is not None and record_limit < 1:
+            raise FoodSafetyError("Record limit must be at least 1.")
+
+        features: list[dict[str, Any]] = []
+        payload: dict[str, Any] | None = None
+        offset = query.offset or 0
+        while record_limit is None or len(features) < record_limit:
+            remaining = page_size if record_limit is None else min(page_size, record_limit - len(features))
+            page = self.query_payload(replace(query, limit=remaining, offset=offset))
+            if payload is None:
+                payload = {key: value for key, value in page.items() if key not in {"exceededTransferLimit", "features"}}
+            page_features = page.get("features", [])
+            features.extend(page_features)
+            exceeded_transfer_limit = bool(page.get("exceededTransferLimit"))
+            if exceeded_transfer_limit and not page_features:
+                raise FoodSafetyError("ArcGIS reported more rows but returned an empty page.")
+            if len(page_features) < remaining and not exceeded_transfer_limit:
+                break
+            offset += len(page_features)
+
+        result = payload or {}
+        result["features"] = features
+        return result
 
     def query_all(self, query: FeatureQuery, record_type: type[Self], *, page_size: int = 2000) -> list[Feature[Self]]:
         """Execute a feature query until all pages have been fetched."""

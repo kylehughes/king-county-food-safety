@@ -9,6 +9,10 @@ class SQLTests(unittest.TestCase):
             sql.and_("", "Business_Status = 'Active'", "Business_Grade = 'Good'"),
             "(Business_Status = 'Active') AND (Business_Grade = 'Good')",
         )
+        self.assertEqual(sql.and_("", None), "1=1")
+
+    def test_or_omits_empty_clauses(self) -> None:
+        self.assertEqual(sql.or_("", None), "1=0")
 
     def test_contains_uppercases_and_escapes_quotes(self) -> None:
         self.assertEqual(sql.contains("Business_Name", "Dick's"), "UPPER(Business_Name) LIKE '%DICK''S%'")

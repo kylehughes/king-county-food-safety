@@ -25,3 +25,12 @@ class HTTPStatusError(FoodSafetyError):
         super().__init__(f"HTTP {status_code} from {url}")
         self.status_code = status_code
         self.url = url
+
+
+class NetworkError(FoodSafetyError):
+    """Network failure while contacting a public endpoint."""
+
+    def __init__(self, url: str, reason: object) -> None:
+        self.url = url
+        self.reason = reason
+        super().__init__(f"Could not reach {url}: {reason}")

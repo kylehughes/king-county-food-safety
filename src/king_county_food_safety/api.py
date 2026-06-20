@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from datetime import date
+
 from king_county_food_safety import sql
 from king_county_food_safety.arcgis import ArcGISClient, FeatureQuery, SpatialFilter
 from king_county_food_safety.errors import FoodSafetyError
@@ -56,6 +58,53 @@ class FoodSafetyAPI:
             raise FoodSafetyError(f"No food facility found for '{facility_id}'.")
         return facilities[0]
 
+    def facilities_for_ids(
+        self,
+        facility_ids: list[str],
+        *,
+        include_inactive: bool = False,
+    ) -> list[Feature[FacilityRecord]]:
+        """Return facilities for many business record IDs or object IDs."""
+
+        ids = self._unique_non_empty(facility_ids)
+        business_record_ids = [facility_id for facility_id in ids if not facility_id.isdecimal()]
+        object_ids = [facility_id for facility_id in ids if facility_id.isdecimal()]
+        facilities: list[Feature[FacilityRecord]] = []
+
+        for chunk in self._chunks(business_record_ids, DEFAULT_BATCH_SIZE):
+            facilities.extend(
+                self.client.query_all(
+                    FeatureQuery(
+                        layer=FoodSafetyLayer.FACILITIES,
+                        where_clause=sql.and_(
+                            sql.in_list("Business_Record_ID", chunk),
+                            None if include_inactive else self._active_facility_clause,
+                        ),
+                        return_geometry=True,
+                        order_by_fields=("Business_Name ASC", "Business_Address ASC"),
+                    ),
+                    FacilityRecord,
+                    page_size=MAX_PAGE_SIZE,
+                )
+            )
+        for chunk in self._chunks(object_ids, DEFAULT_BATCH_SIZE):
+            facilities.extend(
+                self.client.query_all(
+                    FeatureQuery(
+                        layer=FoodSafetyLayer.FACILITIES,
+                        where_clause=sql.and_(
+                            f"OBJECTID IN ({','.join(chunk)})",
+                            None if include_inactive else self._active_facility_clause,
+                        ),
+                        return_geometry=True,
+                        order_by_fields=("Business_Name ASC", "Business_Address ASC"),
+                    ),
+                    FacilityRecord,
+                    page_size=MAX_PAGE_SIZE,
+                )
+            )
+        return facilities
+
     def geocode(self, address: str, *, city: str | None = None, zip_code: str | None = None, limit: int = 5) -> list[GeocodeCandidate]:
         """Geocode an address with King County's public locator."""
 
@@ -65,9 +114,15 @@ class FoodSafetyAPI:
         self,
         facility_id: str,
         *,
+        date_from: date | None = None,
+        date_to: date | None = None,
         include_non_public: bool = False,
         include_inactive_facility: bool = False,
         limit: int = 25,
+        result: str | None = None,
+        score_max: int | None = None,
+        score_min: int | None = None,
+        updated_since: date | None = None,
     ) -> list[Feature[InspectionRecord]]:
         """Return inspections for a facility business record ID or object ID."""
 
@@ -77,16 +132,28 @@ class FoodSafetyAPI:
             raise FoodSafetyError(f"No business record ID found for '{facility_id}'.")
         return self.inspections_by_business_record_id(
             business_record_id,
+            date_from=date_from,
+            date_to=date_to,
             include_non_public=include_non_public,
             limit=limit,
+            result=result,
+            score_max=score_max,
+            score_min=score_min,
+            updated_since=updated_since,
         )
 
     def inspections_by_business_record_id(
         self,
         business_record_id: str,
         *,
+        date_from: date | None = None,
+        date_to: date | None = None,
         include_non_public: bool = False,
         limit: int = 25,
+        result: str | None = None,
+        score_max: int | None = None,
+        score_min: int | None = None,
+        updated_since: date | None = None,
     ) -> list[Feature[InspectionRecord]]:
         """Return inspections for a business record ID."""
 
@@ -95,6 +162,14 @@ class FoodSafetyAPI:
             where_clause=sql.and_(
                 f"Business_Record_ID = {sql.string_literal(business_record_id)}",
                 None if include_non_public else self.PUBLIC_INSPECTION_CLAUSE,
+                self._inspection_filter_clause(
+                    date_from=date_from,
+                    date_to=date_to,
+                    result=result,
+                    score_max=score_max,
+                    score_min=score_min,
+                    updated_since=updated_since,
+                ),
             ),
             fields=("*",),
             order_by_fields=("Inspection_Date DESC",),
@@ -106,9 +181,15 @@ class FoodSafetyAPI:
         self,
         facility_ids: list[str],
         *,
+        date_from: date | None = None,
+        date_to: date | None = None,
         include_non_public: bool = False,
         include_inactive_facility: bool = False,
         limit_per_facility: int | None = None,
+        result: str | None = None,
+        score_max: int | None = None,
+        score_min: int | None = None,
+        updated_since: date | None = None,
     ) -> list[Feature[InspectionRecord]]:
         """Return inspections for many facility IDs using batched ArcGIS queries."""
 
@@ -121,8 +202,16 @@ class FoodSafetyAPI:
             query = FeatureQuery(
                 layer=FoodSafetyLayer.INSPECTIONS,
                 where_clause=sql.and_(
-                    f"Business_Record_ID IN ({self._literal_list(chunk)})",
+                    sql.in_list("Business_Record_ID", chunk),
                     None if include_non_public else self.PUBLIC_INSPECTION_CLAUSE,
+                    self._inspection_filter_clause(
+                        date_from=date_from,
+                        date_to=date_to,
+                        result=result,
+                        score_max=score_max,
+                        score_min=score_min,
+                        updated_since=updated_since,
+                    ),
                 ),
                 fields=("*",),
                 order_by_fields=("Inspection_Date DESC",),
@@ -155,14 +244,19 @@ class FoodSafetyAPI:
         rating: FoodSafetyRating | None = None,
         include_inactive: bool = False,
         limit: int = 25,
+        establishment_type: str | None = None,
+        status: str | None = None,
+        updated_since: date | None = None,
     ) -> list[Feature[FacilityRecord]]:
         """Return facilities within a radius of a coordinate."""
 
         query = FeatureQuery(
             layer=FoodSafetyLayer.FACILITIES,
             where_clause=sql.and_(
-                None if include_inactive else self._active_facility_clause,
+                self._facility_status_clause(include_inactive=include_inactive, status=status),
+                sql.contains("Business_Establishment_Descr", establishment_type) if establishment_type else None,
                 rating.where_clause if rating else None,
+                self._timestamp_from_clause("Load_DT_TM", updated_since),
             ),
             return_geometry=True,
             order_by_fields=("Business_Name ASC",),
@@ -193,17 +287,22 @@ class FoodSafetyAPI:
         include_inactive: bool = False,
         limit: int = 25,
         offset: int = 0,
+        establishment_type: str | None = None,
+        status: str | None = None,
+        updated_since: date | None = None,
     ) -> list[Feature[FacilityRecord]]:
         """Search active food facilities by name, address, city, ZIP, and rating."""
 
         query = FeatureQuery(
             layer=FoodSafetyLayer.FACILITIES,
             where_clause=sql.and_(
-                None if include_inactive else self._active_facility_clause,
+                self._facility_status_clause(include_inactive=include_inactive, status=status),
                 self._search_text_clause(text),
                 sql.contains("Business_City", city) if city else None,
                 f"Business_Location_Zip = {sql.string_literal(zip_code)}" if zip_code else None,
+                sql.contains("Business_Establishment_Descr", establishment_type) if establishment_type else None,
                 rating.where_clause if rating else None,
+                self._timestamp_from_clause("Load_DT_TM", updated_since),
             ),
             return_geometry=True,
             order_by_fields=("Business_Name ASC", "Business_Address ASC"),
@@ -212,12 +311,28 @@ class FoodSafetyAPI:
         )
         return self.client.query(query, FacilityRecord)
 
-    def violations(self, inspection_serial_number: str) -> list[Feature[ViolationRecord]]:
+    def violations(
+        self,
+        inspection_serial_number: str,
+        *,
+        description: str | None = None,
+        points_max: int | None = None,
+        points_min: int | None = None,
+        violation_type: str | None = None,
+    ) -> list[Feature[ViolationRecord]]:
         """Return violations for an inspection serial number."""
 
         query = FeatureQuery(
             layer=FoodSafetyLayer.VIOLATIONS,
-            where_clause=f"Inspection_Serial_Num = {sql.string_literal(inspection_serial_number)}",
+            where_clause=sql.and_(
+                f"Inspection_Serial_Num = {sql.string_literal(inspection_serial_number)}",
+                self._violation_filter_clause(
+                    description=description,
+                    points_max=points_max,
+                    points_min=points_min,
+                    violation_type=violation_type,
+                ),
+            ),
             fields=("*",),
             order_by_fields=("Violation_Points DESC", "Violation_Descr ASC"),
         )
@@ -226,6 +341,11 @@ class FoodSafetyAPI:
     def violations_for_inspection_serial_numbers(
         self,
         inspection_serial_numbers: list[str],
+        *,
+        description: str | None = None,
+        points_max: int | None = None,
+        points_min: int | None = None,
+        violation_type: str | None = None,
     ) -> list[Feature[ViolationRecord]]:
         """Return violations for many inspection serial numbers using batched ArcGIS queries."""
 
@@ -234,7 +354,15 @@ class FoodSafetyAPI:
         for chunk in self._chunks(serials, DEFAULT_BATCH_SIZE):
             query = FeatureQuery(
                 layer=FoodSafetyLayer.VIOLATIONS,
-                where_clause=f"Inspection_Serial_Num IN ({self._literal_list(chunk)})",
+                where_clause=sql.and_(
+                    sql.in_list("Inspection_Serial_Num", chunk),
+                    self._violation_filter_clause(
+                        description=description,
+                        points_max=points_max,
+                        points_min=points_min,
+                        violation_type=violation_type,
+                    ),
+                ),
                 fields=("*",),
                 order_by_fields=("Inspection_Serial_Num ASC", "Violation_Points DESC", "Violation_Descr ASC"),
             )
@@ -244,6 +372,13 @@ class FoodSafetyAPI:
     @property
     def _active_facility_clause(self) -> str:
         return "Business_Status = 'Active'"
+
+    def _facility_status_clause(self, *, include_inactive: bool, status: str | None) -> str | None:
+        if status:
+            return f"Business_Status = {sql.string_literal(status)}"
+        if include_inactive:
+            return None
+        return self._active_facility_clause
 
     def _facility_id_clause(self, facility_id: str) -> str:
         if facility_id.isdecimal():
@@ -299,9 +434,44 @@ class FoodSafetyAPI:
             limited.append(inspection)
         return limited
 
-    @staticmethod
-    def _literal_list(values: list[str]) -> str:
-        return ",".join(sql.string_literal(value) for value in values)
+    def _inspection_filter_clause(
+        self,
+        *,
+        date_from: date | None,
+        date_to: date | None,
+        result: str | None,
+        score_max: int | None,
+        score_min: int | None,
+        updated_since: date | None,
+    ) -> str | None:
+        return sql.and_(
+            f"Inspection_Date >= {sql.date_literal(date_from)}" if date_from else None,
+            f"Inspection_Date <= {sql.date_literal(date_to)}" if date_to else None,
+            f"Inspection_Result = {sql.string_literal(result)}" if result else None,
+            f"Inspection_Score >= {score_min}" if score_min is not None else None,
+            f"Inspection_Score <= {score_max}" if score_max is not None else None,
+            self._timestamp_from_clause("Load_DT_TM", updated_since),
+        )
+
+    def _timestamp_from_clause(self, field: str, value: date | None) -> str | None:
+        if value is None:
+            return None
+        return f"{field} >= {sql.timestamp_literal(value)}"
+
+    def _violation_filter_clause(
+        self,
+        *,
+        description: str | None,
+        points_max: int | None,
+        points_min: int | None,
+        violation_type: str | None,
+    ) -> str | None:
+        return sql.and_(
+            sql.contains("Violation_Descr", description) if description else None,
+            f"Violation_Points >= {points_min}" if points_min is not None else None,
+            f"Violation_Points <= {points_max}" if points_max is not None else None,
+            f"Violation_Type = {sql.string_literal(violation_type.upper())}" if violation_type else None,
+        )
 
     def _search_text_clause(self, text: str | None) -> str | None:
         if text is None or not text.strip():
