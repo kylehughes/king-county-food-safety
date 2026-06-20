@@ -1,4 +1,4 @@
-# King County Food Safety CLI
+# King County Food Safety
 
 [![PyPI](https://img.shields.io/pypi/v/king-county-food-safety)](https://pypi.org/project/king-county-food-safety/)
 [![Python Versions](https://img.shields.io/pypi/pyversions/king-county-food-safety)](https://pypi.org/project/king-county-food-safety/)
